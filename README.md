@@ -19,8 +19,11 @@ komodo/<name>.toml           Komodo-Ressourcen (Resource Sync liest den ganzen O
 
 ## Ingress
 
-Zoraxy macht TLS und leitet an Traefik auf `http://<host>:80` weiter (Host-Header erhalten). Apps hängen am externen
-Netzwerk `proxy` und setzen Traefik-Labels:
+- **Öffentliche Apps** (`*.pmsys.dev`): Zoraxy macht TLS und leitet an Traefik auf `http://<host>:80` weiter
+  (Host-Header erhalten).
+- **Interne Apps** (`*.apps.lan`): nur im LAN, nicht über Zoraxy.
+
+Apps hängen am externen Netzwerk `proxy` und setzen Traefik-Labels:
 
 ```yaml
 services:
@@ -42,7 +45,7 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 
 ## Stacks
 
-| Stack        | Hostnamen                           | Hinweis                                         |
-|--------------|-------------------------------------|-------------------------------------------------|
-| `traefik`    | –                                   | Port 80, mit Socket-Proxy, `deploy = true`      |
-| `excalidraw` | `draw.apps.lan`, `ws-draw.apps.lan` | zustandslos, Collab-Server braucht eigene Route |
+| Stack        | Hostnamen                             | Hinweis                                                     |
+|--------------|---------------------------------------|-------------------------------------------------------------|
+| `traefik`    | –                                     | Port 80, mit Socket-Proxy, `deploy = true`                  |
+| `excalidraw` | `draw.pmsys.dev`, `ws-draw.pmsys.dev` | öffentlich, zustandslos, Collab-Server braucht eigene Route |
