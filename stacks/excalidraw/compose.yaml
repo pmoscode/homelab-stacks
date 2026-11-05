@@ -1,0 +1,33 @@
+# Excalidraw with self-hosted collaboration server (from k8s chart pmoscode-helm/excalidraw 0.18.0).
+# Stateless: no volumes, no database.
+# The browser connects to the collab server directly, so ws-${EXCALIDRAW_HOST}
+# needs its own Zoraxy route (websockets enabled).
+services:
+  excalidraw:
+    image: pmoscode/excalidraw:v0.18.0
+    container_name: excalidraw
+    restart: unless-stopped
+    environment:
+      APP_WS_OLD_SERVER_URL: https://oss-collab.excalidraw.com
+      APP_WS_NEW_SERVER_URL: https://ws-${EXCALIDRAW_HOST}
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.excalidraw.rule=Host(`${EXCALIDRAW_HOST}`)
+      - traefik.http.routers.excalidraw.entrypoints=web
+      - traefik.http.services.excalidraw.loadbalancer.server.port=80
+
+  excalidraw-collab:
+    image: pmoscode/excalidraw-collab-server:1.0.0
+    container_name: excalidraw-collab
+    restart: unless-stopped
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.excalidraw-collab.rule=Host(`ws-${EXCALIDRAW_HOST}`)
+      - traefik.http.routers.excalidraw-collab.entrypoints=web
+      - traefik.http.services.excalidraw-collab.loadbalancer.server.port=3002
+
+networks:
+  proxy:
+    external: true

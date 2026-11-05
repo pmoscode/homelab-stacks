@@ -1,0 +1,51 @@
+# Traefik behind Zoraxy (Zoraxy terminates TLS, Traefik routes by Host header).
+# Apps join the external network "proxy" and set traefik.* labels.
+# Docker API only through the socket proxy (read-only, containers/networks/events).
+services:
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    container_name: socket-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      EVENTS: 1
+      PING: 1
+      VERSION: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [socket_proxy]
+
+  traefik:
+    image: traefik:v3.7.17
+    container_name: traefik
+    restart: unless-stopped
+    depends_on: [socket-proxy]
+    command:
+      - --global.checknewversion=false
+      - --global.sendanonymoususage=false
+      - --log.level=INFO
+      - --ping=true
+      - --providers.docker=true
+      - --providers.docker.endpoint=tcp://socket-proxy:2375
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+      - --entrypoints.web.address=:80
+      # Zoraxy is the only trusted proxy (X-Forwarded-* headers)
+      - --entrypoints.web.forwardedheaders.trustedips=${ZORAXY_IP}/32
+    ports:
+      - "80:80"   # nftables: only reachable from Zoraxy
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks: [proxy, socket_proxy]
+
+networks:
+  proxy:
+    name: proxy
+  socket_proxy:
+    name: socket_proxy
+    internal: true
