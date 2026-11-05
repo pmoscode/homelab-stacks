@@ -1,5 +1,7 @@
-# Traefik behind Zoraxy (Zoraxy terminates TLS, Traefik routes by Host header).
-# Apps join the external network "proxy" and set traefik.* labels.
+# Traefik routes by Host header. Apps join the external network "proxy" and set traefik.* labels.
+#   web (:80)        public apps behind Zoraxy (Zoraxy terminates TLS); http -> https for LAN-only apps
+#   websecure (:443) LAN-only apps, TLS with the wildcard *.apps.lan from the own CA
+# Certificate and dynamic config (/srv/traefik) are written by Ansible (homelab-komodo, role tls_internal).
 # Docker API only through the socket proxy (read-only, containers/networks/events).
 services:
   socket-proxy:
@@ -31,11 +33,19 @@ services:
       - --providers.docker.endpoint=tcp://socket-proxy:2375
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=proxy
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
       - --entrypoints.web.address=:80
       # Zoraxy is the only trusted proxy (X-Forwarded-* headers)
       - --entrypoints.web.forwardedheaders.trustedips=${ZORAXY_IP}/32
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls=true
     ports:
-      - "80:80"   # nftables: only reachable from Zoraxy
+      - "80:80"     # nftables: LAN only
+      - "443:443"   # nftables: LAN only
+    volumes:
+      - /srv/traefik/certs:/etc/traefik/certs:ro
+      - /srv/traefik/dynamic:/etc/traefik/dynamic:ro
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 30s

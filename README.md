@@ -19,11 +19,15 @@ komodo/<name>.toml           Komodo-Ressourcen (Resource Sync liest den ganzen O
 
 ## Ingress
 
-- **Öffentliche Apps** (`*.pmsys.dev`): Zoraxy macht TLS und leitet an Traefik auf `http://<host>:80` weiter
-  (Host-Header erhalten).
-- **Interne Apps** (`*.apps.lan`): nur im LAN, nicht über Zoraxy.
+| Art                         | Weg                                         | Entrypoint          | TLS                                   |
+|-----------------------------|---------------------------------------------|---------------------|---------------------------------------|
+| **Öffentlich** `*.pmsys.dev` | Internet → Zoraxy → Traefik `:80`           | `web`               | Zoraxy (Wildcard über desec.io)       |
+| **Intern** `*.apps.lan`      | LAN → Traefik `:443` (DNS `*.apps.lan` → Tiny) | `websecure`      | Traefik, Wildcard `*.apps.lan` eigene CA |
 
-Apps hängen am externen Netzwerk `proxy` und setzen Traefik-Labels:
+Das Zertifikat für `*.apps.lan` stellt Ansible aus (homelab-komodo, Rolle `tls_internal`) und legt es mit der
+dynamischen Traefik-Config unter `/srv/traefik` ab. `http://<app>.apps.lan` leitet auf HTTPS um.
+
+Apps hängen am externen Netzwerk `proxy` und setzen Traefik-Labels. Öffentliche App:
 
 ```yaml
 services:
@@ -40,6 +44,12 @@ networks:
     external: true
 ```
 
+Interne App: gleich, nur `entrypoints=websecure` (TLS ist dort Standard):
+
+```yaml
+      - traefik.http.routers.app.entrypoints=websecure
+```
+
 Traefik spricht die Docker-API nur über den Socket-Proxy (Netzwerk `socket_proxy`, intern, nur lesend). Andere
 Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Netzwerk.
 
@@ -47,5 +57,5 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 
 | Stack        | Hostnamen                             | Hinweis                                                     |
 |--------------|---------------------------------------|-------------------------------------------------------------|
-| `traefik`    | –                                     | Port 80, mit Socket-Proxy, `deploy = true`                  |
+| `traefik`    | –                                     | Port 80/443, mit Socket-Proxy, `deploy = true`              |
 | `excalidraw` | `draw.pmsys.dev`, `ws-draw.pmsys.dev` | öffentlich, zustandslos, Collab-Server braucht eigene Route |
