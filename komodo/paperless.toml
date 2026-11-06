@@ -1,0 +1,18 @@
+# App stack: no "deploy = true". The first deploy is done by the migration cutover
+# (homelab-komodo: task migrate:cutover APP=paperless), after the database restore.
+# PAPERLESS_* secrets are Komodo secret variables (homelab-komodo vault: vault_komodo_variables).
+[[stack]]
+name = "paperless"
+description = "Document management (LAN only)"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/paperless"
+webhook_enabled = false
+environment = """
+PAPERLESS_HOST=paperless.apps.lan
+PAPERLESS_SECRET_KEY=[[PAPERLESS_SECRET_KEY]]
+PAPERLESS_DBPASS=[[PAPERLESS_DBPASS]]
+"""

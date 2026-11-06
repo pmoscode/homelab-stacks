@@ -72,3 +72,4 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | `audiobookshelf` | `books.pmsys.dev`                  | öffentlich, Hörbücher lokal (~90 GB), Version fest 2.35.0  |
 | `toniebox-manager` | `tonie.apps.lan`                  | intern, SQLite, distroless, Secrets `TONIEBOX_*`           |
 | `jdownloader` | `jd.apps.lan`                        | intern, Daten auf dem NAS (`/mnt/nas/jdownloader`)          |
+| `paperless`  | `paperless.apps.lan`                  | intern, Postgres (`db`), eigenes Redis, consume auf dem NAS |

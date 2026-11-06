@@ -1,0 +1,64 @@
+# Paperless-ngx (from k8s, same version and env). LAN-only: https://${PAPERLESS_HOST} (websecure, own CA).
+# Database "paperless" in the shared Postgres (stack "postgres", network "db"), restored by the migration.
+# Redis is only the task broker (not migrated, no volume).
+# Data (UID 1000) migrated from nfs-internal PVCs to /srv/data/paperless/{data,media,export};
+# consume is on the NAS (/mnt/nas/paperless/consume, polled because NFS has no inotify).
+# PAPERLESS_SECRET_KEY must stay the one from k8s. PAPERLESS_ADMIN_* are left out: they only
+# create the admin on an empty database.
+services:
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.3.2
+    container_name: paperless
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      TZ: Europe/Berlin
+      PAPERLESS_URL: https://${PAPERLESS_HOST}
+      PAPERLESS_PORT: "8000"
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+      PAPERLESS_REDIS: redis://redis:6379
+      PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_DBHOST: postgres
+      PAPERLESS_DBPORT: "5432"
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${PAPERLESS_DBPASS}
+      PAPERLESS_OCR_LANGUAGE: deu
+      PAPERLESS_CONSUMER_POLLING: "20"
+    volumes:
+      - /srv/data/paperless/data:/usr/src/paperless/data
+      - /srv/data/paperless/media:/usr/src/paperless/media
+      - /srv/data/paperless/export:/usr/src/paperless/export
+      - /mnt/nas/paperless/consume:/usr/src/paperless/consume
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8000/accounts/login/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 5
+    networks: [default, proxy, db]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.paperless.rule=Host(`${PAPERLESS_HOST}`)
+      - traefik.http.routers.paperless.entrypoints=websecure
+      - traefik.http.services.paperless.loadbalancer.server.port=8000
+
+  redis:
+    image: redis:8.10.2
+    container_name: paperless-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [default]
+
+networks:
+  proxy:
+    external: true
+  db:
+    external: true
