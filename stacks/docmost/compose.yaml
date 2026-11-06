@@ -1,0 +1,68 @@
+# Docmost wiki (from k8s, same version and config). LAN-only: https://${DOCMOST_HOST} (websecure, own CA).
+# Database "docmost" in the shared Postgres (stack "postgres", network "db"), restored by the
+# migration. Redis is only a cache/queue (not migrated, no volume).
+# Uploads in /srv/data/docmost/storage (migrated from PVC docmost-docmost, owned by UID 1000).
+# APP_SECRET must stay the one from k8s, otherwise all sessions and tokens become invalid.
+services:
+  docmost:
+    image: docmost/docmost:0.25.3
+    container_name: docmost
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      APP_URL: https://${DOCMOST_HOST}
+      APP_PORT: "3000"
+      APP_SECRET: ${DOCMOST_APP_SECRET}
+      DATABASE_URL: ${DOCMOST_DATABASE_URL}
+      REDIS_URL: redis://redis:6379
+      STORAGE_DRIVER: local
+      UPLOADS_DIR: /app/data/storage
+      FILE_UPLOAD_SIZE_LIMIT: 100mb
+      DRAWIO_URL: https://embed.diagrams.net
+      DISABLE_TELEMETRY: "true"
+      ENABLE_SIGNUP: "true"
+      DEBUG_MODE: "false"
+      LOG_LEVEL: info
+      MAIL_DRIVER: smtp
+      MAIL_FROM_ADDRESS: docmost@pmsys.zone
+      MAIL_FROM_NAME: Docmost
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: "465"
+      SMTP_SECURE: "true"
+      SMTP_IGNORETLS: "false"
+      SMTP_USERNAME: ${DOCMOST_SMTP_USER}
+      SMTP_PASSWORD: ${DOCMOST_SMTP_PASSWORD}
+    volumes:
+      - /srv/data/docmost/storage:/app/data/storage
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    networks: [default, proxy, db]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.docmost.rule=Host(`${DOCMOST_HOST}`)
+      - traefik.http.routers.docmost.entrypoints=websecure
+      - traefik.http.services.docmost.loadbalancer.server.port=3000
+
+  redis:
+    image: redis:8.10
+    container_name: docmost-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [default]
+
+networks:
+  proxy:
+    external: true
+  db:
+    external: true

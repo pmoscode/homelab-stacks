@@ -1,0 +1,20 @@
+# App stack: no "deploy = true". The first deploy is done by the migration cutover
+# (homelab-komodo: task migrate:cutover APP=docmost), after the database restore.
+# DOCMOST_* secrets are Komodo secret variables (homelab-komodo vault: vault_komodo_variables).
+[[stack]]
+name = "docmost"
+description = "Wiki (LAN only)"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/docmost"
+webhook_enabled = false
+environment = """
+DOCMOST_HOST=docs.apps.lan
+DOCMOST_APP_SECRET=[[DOCMOST_APP_SECRET]]
+DOCMOST_DATABASE_URL=[[DOCMOST_DATABASE_URL]]
+DOCMOST_SMTP_USER=[[DOCMOST_SMTP_USER]]
+DOCMOST_SMTP_PASSWORD=[[DOCMOST_SMTP_PASSWORD]]
+"""
