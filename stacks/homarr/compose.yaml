@@ -1,0 +1,42 @@
+# Homarr dashboard (from k8s, same version). LAN-only: https://${HOMARR_HOST} (websecure, own CA).
+# SQLite and settings in /appdata (migrated from PVC homarr-database).
+# SECRET_ENCRYPTION_KEY must be the one from k8s (secret homarr-db-encryption), otherwise
+# the stored integration credentials can no longer be decrypted.
+services:
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:v2.6.0
+    container_name: homarr
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+      LOG_LEVEL: info
+      SECRET_ENCRYPTION_KEY: ${HOMARR_SECRET_ENCRYPTION_KEY}
+      DB_DRIVER: better-sqlite3
+      DB_DIALECT: sqlite
+      DB_URL: /appdata/db.sqlite
+      DB_MIGRATIONS_DISABLED: "false"
+      AUTH_PROVIDERS: credentials
+      AUTH_SESSION_EXPIRY_TIME: 30d
+      # k8s integration is gone; Docker integration would need the socket proxy
+      ENABLE_KUBERNETES: "false"
+      ENABLE_DOCKER: "false"
+      ENABLE_DNS_CACHING: "false"
+      NO_EXTERNAL_CONNECTION: "false"
+    volumes:
+      - /srv/data/homarr/appdata:/appdata
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:7575/api/health/live || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.homarr.rule=Host(`${HOMARR_HOST}`)
+      - traefik.http.routers.homarr.entrypoints=websecure
+      - traefik.http.services.homarr.loadbalancer.server.port=7575
+
+networks:
+  proxy:
+    external: true

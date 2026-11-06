@@ -1,0 +1,17 @@
+# App stack: no "deploy = true". The first deploy is done by the migration cutover
+# (homelab-komodo: task migrate:cutover APP=homarr).
+# HOMARR_SECRET_ENCRYPTION_KEY is a Komodo secret variable (homelab-komodo vault: vault_komodo_variables).
+[[stack]]
+name = "homarr"
+description = "Dashboard (LAN only)"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/homarr"
+webhook_enabled = false
+environment = """
+HOMARR_HOST=home.apps.lan
+HOMARR_SECRET_ENCRYPTION_KEY=[[HOMARR_SECRET_ENCRYPTION_KEY]]
+"""
