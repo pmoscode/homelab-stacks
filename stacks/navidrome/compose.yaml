@@ -1,0 +1,36 @@
+# Navidrome music server (from k8s, same version and env). Public: https://${NAVIDROME_HOST} via Zoraxy.
+# Database, artwork and cache in /srv/data/navidrome/data (migrated from PVC navidrome-config).
+# Music library: NAS share mounted read-only on the host at /mnt/music (homelab-komodo: nfs_mounts).
+services:
+  navidrome:
+    image: deluan/navidrome:0.64.2
+    container_name: navidrome
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+      ND_MUSICFOLDER: /music
+      ND_LOGLEVEL: info
+      ND_SESSIONTIMEOUT: 24h
+      ND_ENABLESHARING: "true"
+      ND_ENABLETRANSCODINGCONFIG: "true"
+      ND_ENABLEINSIGHTSCOLLECTOR: "false"
+      ND_PROMETHEUS_ENABLED: "false"
+    volumes:
+      - /srv/data/navidrome/data:/data
+      - /mnt/music:/music:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:4533/ping"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.navidrome.rule=Host(`${NAVIDROME_HOST}`)
+      - traefik.http.routers.navidrome.entrypoints=web
+      - traefik.http.services.navidrome.loadbalancer.server.port=4533
+
+networks:
+  proxy:
+    external: true

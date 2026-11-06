@@ -1,0 +1,15 @@
+# App stack: no "deploy = true". The first deploy is done by the migration cutover
+# (homelab-komodo: task migrate:cutover APP=navidrome).
+[[stack]]
+name = "navidrome"
+description = "Music streaming server"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/navidrome"
+webhook_enabled = false
+environment = """
+NAVIDROME_HOST=music.pmsys.dev
+"""
