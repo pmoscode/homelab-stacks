@@ -1,0 +1,18 @@
+# App stack: no "deploy = true". The first deploy is done by the migration cutover
+# (homelab-komodo: task migrate:cutover APP=jdownloader).
+# JD_MYJD_* secrets are Komodo secret variables (homelab-komodo vault: vault_komodo_variables).
+[[stack]]
+name = "jdownloader"
+description = "JDownloader 2 (LAN only)"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/jdownloader"
+webhook_enabled = false
+environment = """
+JD_HOST=jd.apps.lan
+JD_MYJD_EMAIL=[[JD_MYJD_EMAIL]]
+JD_MYJD_PASSWORD=[[JD_MYJD_PASSWORD]]
+"""

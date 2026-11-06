@@ -1,0 +1,37 @@
+# JDownloader 2 (from k8s, same version and env). LAN-only web UI: https://${JD_HOST} (websecure, own CA).
+# Data on the NAS (migrated from the nfs-external PVC jdownloader2-data to /mnt/nas/jdownloader):
+#   config    -> /config  (~170 MB)
+#   downloads -> /output  (~230 GB)
+# MyJDownloader login as Komodo secrets (also stored in /config after the first start).
+services:
+  jdownloader:
+    image: jlesage/jdownloader-2:v26.03.1
+    container_name: jdownloader
+    restart: unless-stopped
+    environment:
+      USER_ID: "1000"
+      GROUP_ID: "1000"
+      MYJDOWNLOADER_EMAIL: ${JD_MYJD_EMAIL}
+      MYJDOWNLOADER_PASSWORD: ${JD_MYJD_PASSWORD}
+      MYJDOWNLOADER_DEVICE_NAME: jdownloader2-id
+      WEB_FILE_MANAGER: "1"
+      WEB_FILE_MANAGER_ALLOWED_PATHS: AUTO
+    volumes:
+      - /mnt/nas/jdownloader/config:/config
+      - /mnt/nas/jdownloader/downloads:/output
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:5800/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.jdownloader.rule=Host(`${JD_HOST}`)
+      - traefik.http.routers.jdownloader.entrypoints=websecure
+      - traefik.http.services.jdownloader.loadbalancer.server.port=5800
+
+networks:
+  proxy:
+    external: true
