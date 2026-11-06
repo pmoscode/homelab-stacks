@@ -1,0 +1,35 @@
+# TRMNL BYOS server (Laravel, from k8s, same version and env). Public: https://${TRMNL_HOST} via Zoraxy.
+# SQLite in database/storage, generated screen images in images/generated (both migrated from
+# nfs-internal PVCs, owned by www-data = UID 82).
+# APP_KEY comes from the .env baked into the image (k8s set none). Pin it as a Komodo secret
+# before an image upgrade, otherwise sessions and encrypted values may be lost.
+services:
+  trmnl:
+    image: ghcr.io/usetrmnl/byos_laravel:0.21.0
+    container_name: trmnl
+    restart: unless-stopped
+    environment:
+      DB_DATABASE: /var/www/html/database/storage/database.sqlite
+      APP_TIMEZONE: Europe/Berlin
+      FORCE_HTTPS: "1"
+      PHP_OPCACHE_ENABLE: "1"
+      TRMNL_PROXY_REFRESH_MINUTES: "5"
+    volumes:
+      - /srv/data/trmnl/database:/var/www/html/database/storage
+      - /srv/data/trmnl/generated:/var/www/html/storage/app/public/images/generated
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8080/healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.trmnl.rule=Host(`${TRMNL_HOST}`)
+      - traefik.http.routers.trmnl.entrypoints=web
+      - traefik.http.services.trmnl.loadbalancer.server.port=8080
+
+networks:
+  proxy:
+    external: true
