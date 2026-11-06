@@ -5,9 +5,9 @@
 #   /mnt/opencloud/users       -> /var/lib/opencloud-users  (PosixFS on the NAS, NFS 4.2, user xattrs)
 # All owned by UID 1000 (created by homelab-komodo: migration/playbooks/40-opencloud.yml).
 # OC_INSECURE: the services reach each other through ${OC_HOST} (Traefik, own CA not in the image).
-#
-# Migration only (remove after task migrate:opencloud, then redeploy):
-#   PROXY_ENABLE_BASIC_AUTH, AUTH_APP_ENABLE_IMPERSONATION
+# App tokens (auth-app, "opencloud auth-app create" in the container) work for WebDAV clients
+# such as rclone and for the migration's API calls. No basic auth with passwords: with
+# PROXY_ENABLE_BASIC_AUTH every app-token request first fails an IDM bind (slow, CPU heavy).
 services:
   opencloud:
     image: opencloudeu/opencloud:7.2.4
@@ -30,8 +30,6 @@ services:
       STORAGE_USERS_ID_CACHE_STORE: nats-js-kv
       OC_ADD_RUN_SERVICES: auth-app
       PROXY_ENABLE_APP_AUTH: "true"
-      PROXY_ENABLE_BASIC_AUTH: "true"
-      AUTH_APP_ENABLE_IMPERSONATION: "true"
     volumes:
       - /srv/data/opencloud/config:/etc/opencloud
       - /srv/data/opencloud/data:/var/lib/opencloud
