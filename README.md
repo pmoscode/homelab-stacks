@@ -50,6 +50,10 @@ Interne App: gleich, nur `entrypoints=websecure` (TLS ist dort Standard):
       - traefik.http.routers.app.entrypoints=websecure
 ```
 
+Apps mit Datenbank hängen zusätzlich am externen Netzwerk `db` (vom Stack `postgres` angelegt, intern, ohne
+Internetzugang) und verbinden sich mit `postgres:5432`. Datenbank und Rolle legt die Migration an, neue Apps per
+`docker exec -it postgres psql -U postgres`.
+
 Traefik spricht die Docker-API nur über den Socket-Proxy (Netzwerk `socket_proxy`, intern, nur lesend). Andere
 Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Netzwerk.
 
@@ -58,6 +62,7 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | Stack        | Hostnamen                             | Hinweis                                                     |
 |--------------|---------------------------------------|-------------------------------------------------------------|
 | `traefik`    | –                                     | Port 80/443, mit Socket-Proxy, `deploy = true`              |
+| `postgres`   | –                                     | Postgres 17.5 für alle Apps, Netzwerk `db`, `deploy = true` |
 | `excalidraw` | `draw.pmsys.dev`, `ws-draw.pmsys.dev` | öffentlich, zustandslos, Collab-Server braucht eigene Route |
 | `homarr`     | `home.apps.lan`                       | intern, SQLite, Secret `HOMARR_SECRET_ENCRYPTION_KEY`       |
 | `trmnl`      | `trmnl.pmsys.dev`                     | öffentlich, SQLite, `APP_KEY` aus dem Image                 |

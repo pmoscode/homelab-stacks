@@ -1,0 +1,17 @@
+# Infrastructure stack: deployed by the sync (deploy = true).
+# POSTGRES_SUPERUSER_PASSWORD is a Komodo secret variable (homelab-komodo vault: vault_komodo_variables).
+# Only used by initdb on the first start; changing it later does not change the password.
+[[stack]]
+name = "postgres"
+description = "Shared Postgres 17 for all apps"
+deploy = true
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/postgres"
+webhook_enabled = false
+environment = """
+POSTGRES_SUPERUSER_PASSWORD=[[POSTGRES_SUPERUSER_PASSWORD]]
+"""

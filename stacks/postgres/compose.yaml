@@ -1,0 +1,33 @@
+# Shared Postgres for all apps (replaces the CNPG cluster pg-cluster, same version 17.5).
+# One database and one role per app. Databases and roles (incl. password hashes) are restored
+# by the migration (homelab-komodo: migration/tasks/restore-db.yml), not created here.
+# Same locale as CNPG (UTF8, C). Data in /srv/data/postgres, nightly pg_dumpall by the
+# backup role of homelab-komodo (/srv/backup/postgres).
+#
+# Apps join the external network "db" and connect to host "postgres", port 5432.
+# No published port: reachable only from containers on "db" (and docker exec on the host).
+services:
+  postgres:
+    image: postgres:17.5-bookworm
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C
+      TZ: Europe/Berlin
+    volumes:
+      - /srv/data/postgres:/var/lib/postgresql/data
+    shm_size: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    networks: [db]
+
+networks:
+  db:
+    name: db
+    internal: true
