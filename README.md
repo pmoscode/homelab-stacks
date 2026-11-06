@@ -67,3 +67,4 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | `homarr`     | `home.apps.lan`                       | intern, SQLite, Secret `HOMARR_SECRET_ENCRYPTION_KEY`       |
 | `trmnl`      | `trmnl.pmsys.dev`                     | öffentlich, SQLite, `APP_KEY` aus dem Image                 |
 | `docmost`    | `docs.apps.lan`                       | intern, Postgres (`db`), eigenes Redis, Secrets `DOCMOST_*` |
+| `pgadmin`    | `pgadmin.apps.lan`                    | intern, Netzwerk `db`, Login aus der migrierten Config-DB   |

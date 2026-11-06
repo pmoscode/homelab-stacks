@@ -1,0 +1,35 @@
+# pgAdmin (from k8s, same version). LAN-only: https://${PGADMIN_HOST} (websecure, own CA).
+# Config DB, saved servers and sessions in /srv/data/pgadmin (migrated from PVC pgadmin-pgadmin4,
+# owned by UID 5050). Login and password come from that config DB; PGADMIN_DEFAULT_* are only
+# used when it is missing (first start), so no password is set here.
+# On network "db" to reach the shared Postgres as host "postgres".
+services:
+  pgadmin:
+    image: dpage/pgadmin4:9.18
+    container_name: pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_LISTEN_PORT: "80"
+      PGADMIN_DEFAULT_EMAIL: admin@pmoscode.de
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
+    volumes:
+      - /srv/data/pgadmin:/var/lib/pgadmin
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/misc/ping"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    networks: [proxy, db]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.pgadmin.rule=Host(`${PGADMIN_HOST}`)
+      - traefik.http.routers.pgadmin.entrypoints=websecure
+      - traefik.http.services.pgadmin.loadbalancer.server.port=80
+
+networks:
+  proxy:
+    external: true
+  db:
+    external: true
