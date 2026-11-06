@@ -1,0 +1,19 @@
+# App stack: no "deploy = true". The first deploy is done by the migration cutover
+# (homelab-komodo: task migrate:cutover APP=toniebox-manager).
+# TONIEBOX_* secrets are Komodo secret variables (homelab-komodo vault: vault_komodo_variables).
+[[stack]]
+name = "toniebox-manager"
+description = "Toniebox manager (LAN only)"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/toniebox-manager"
+webhook_enabled = false
+environment = """
+TONIEBOX_HOST=tonie.apps.lan
+TONIEBOX_ADMIN_EMAIL=[[TONIEBOX_ADMIN_EMAIL]]
+TONIEBOX_ADMIN_PASSWORD=[[TONIEBOX_ADMIN_PASSWORD]]
+TONIEBOX_SESSION_SECRET=[[TONIEBOX_SESSION_SECRET]]
+"""

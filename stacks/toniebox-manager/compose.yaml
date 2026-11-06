@@ -1,0 +1,39 @@
+# Toniebox Manager (from k8s, same image and env). LAN-only: https://${TONIEBOX_HOST} (websecure, own CA).
+# k8s ran :main; pinned to main-b0708c5, the same image digest (sha256:2fe5ce46...).
+# SQLite and backups in /srv/data/toniebox-manager/storage (migrated from px-data PVC, UID 65532).
+# Distroless image (no shell, no wget): no Docker healthcheck, the app serves /health.
+services:
+  toniebox-manager:
+    image: ghcr.io/pmoscode/toniebox-manager:main-b0708c5
+    container_name: toniebox-manager
+    restart: unless-stopped
+    user: "65532:65532"
+    environment:
+      APP_ENV: prod
+      HTTP_ADDR: ":8080"
+      AUTO_MIGRATE: "true"
+      DB_DRIVER: sqlite
+      DB_DSN: /app/storage/data/toniebox.db
+      BACKUP_DIR: /app/storage/backups
+      BACKUP_INTERVAL_MINUTES: "0"
+      BACKUP_RETENTION: "20"
+      STARTUP_TIMEOUT_SECONDS: "30"
+      COOKIE_DOMAIN: ${TONIEBOX_HOST}
+      COOKIE_SECURE: "true"
+      ADMIN_EMAIL: ${TONIEBOX_ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${TONIEBOX_ADMIN_PASSWORD}
+      SESSION_SECRET: ${TONIEBOX_SESSION_SECRET}
+    volumes:
+      - /srv/data/toniebox-manager/storage:/app/storage
+    security_opt:
+      - no-new-privileges:true
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.toniebox-manager.rule=Host(`${TONIEBOX_HOST}`)
+      - traefik.http.routers.toniebox-manager.entrypoints=websecure
+      - traefik.http.services.toniebox-manager.loadbalancer.server.port=8080
+
+networks:
+  proxy:
+    external: true
