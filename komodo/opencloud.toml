@@ -1,0 +1,17 @@
+# App stack: no "deploy = true". Deployed by homelab-komodo: task migrate:opencloud (preflight).
+# OC_ADMIN_PASSWORD is a Komodo secret variable (homelab-komodo vault: vault_komodo_variables),
+# the same value as vault_opencloud_admin_password. Only used on the first start (IDM init).
+[[stack]]
+name = "opencloud"
+description = "Files (OpenCloud, replaces Nextcloud, LAN only)"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/opencloud"
+webhook_enabled = false
+environment = """
+OC_HOST=cloud.apps.lan
+OC_ADMIN_PASSWORD=[[OC_ADMIN_PASSWORD]]
+"""

@@ -73,3 +73,4 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | `toniebox-manager` | `tonie.apps.lan`                  | intern, SQLite, distroless, Secrets `TONIEBOX_*`           |
 | `jdownloader` | `jd.apps.lan`                        | intern, Daten auf dem NAS (`/mnt/nas/jdownloader`)          |
 | `paperless`  | `paperless.apps.lan`                  | intern, Postgres (`db`), eigenes Redis, consume auf dem NAS |
+| `opencloud`  | `cloud.apps.lan`                      | intern, PosixFS auf dem NAS (`/mnt/opencloud`), eingebauter IdP |

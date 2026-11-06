@@ -1,0 +1,48 @@
+# OpenCloud (replaces Nextcloud). LAN-only: https://${OC_HOST} (websecure, own CA).
+# Built-in IdP (IDM), files only. TLS ends at Traefik (PROXY_TLS=false).
+#   /srv/data/opencloud/config -> /etc/opencloud      (opencloud.yaml with generated secrets, local)
+#   /srv/data/opencloud/data   -> /var/lib/opencloud  (IDM, NATS, search index, local)
+#   /mnt/opencloud/users       -> /var/lib/opencloud-users  (PosixFS on the NAS, NFS 4.2, user xattrs)
+# All owned by UID 1000 (created by homelab-komodo: migration/playbooks/40-opencloud.yml).
+# OC_INSECURE: the services reach each other through ${OC_HOST} (Traefik, own CA not in the image).
+#
+# Migration only (remove after task migrate:opencloud, then redeploy):
+#   PROXY_ENABLE_BASIC_AUTH, AUTH_APP_ENABLE_IMPERSONATION
+services:
+  opencloud:
+    image: opencloudeu/opencloud:7.2.4
+    container_name: opencloud
+    restart: unless-stopped
+    user: "1000:1000"
+    entrypoint: ["/bin/sh", "-c"]
+    # init only writes opencloud.yaml on the first start (fails harmlessly afterwards)
+    command: ["opencloud init || true; exec opencloud server"]
+    environment:
+      OC_URL: https://${OC_HOST}
+      OC_INSECURE: "true"
+      OC_LOG_LEVEL: info
+      PROXY_TLS: "false"
+      PROXY_HTTP_ADDR: 0.0.0.0:9200
+      IDM_ADMIN_PASSWORD: ${OC_ADMIN_PASSWORD}
+      IDM_CREATE_DEMO_USERS: "false"
+      STORAGE_USERS_DRIVER: posix
+      STORAGE_USERS_POSIX_ROOT: /var/lib/opencloud-users
+      STORAGE_USERS_ID_CACHE_STORE: nats-js-kv
+      OC_ADD_RUN_SERVICES: auth-app
+      PROXY_ENABLE_APP_AUTH: "true"
+      PROXY_ENABLE_BASIC_AUTH: "true"
+      AUTH_APP_ENABLE_IMPERSONATION: "true"
+    volumes:
+      - /srv/data/opencloud/config:/etc/opencloud
+      - /srv/data/opencloud/data:/var/lib/opencloud
+      - /mnt/opencloud/users:/var/lib/opencloud-users
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.opencloud.rule=Host(`${OC_HOST}`)
+      - traefik.http.routers.opencloud.entrypoints=websecure
+      - traefik.http.services.opencloud.loadbalancer.server.port=9200
+
+networks:
+  proxy:
+    external: true
