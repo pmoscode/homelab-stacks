@@ -1,0 +1,35 @@
+# Audiobookshelf (from k8s). Public: https://${ABS_HOST} via Zoraxy.
+# k8s ran :latest; pinned to 2.35.0, the same image digest (sha256:89276ff2...).
+# All data migrated from nfs-internal PVCs to /srv/data/audiobookshelf/{config,metadata,backup,audiobooks}
+# (audiobooks ~90 GB). Library paths inside the container stay the same (/audiobooks).
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:2.35.0
+    container_name: audiobookshelf
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+      CONFIG_PATH: /config
+      METADATA_PATH: /metadata
+      BACKUP_PATH: /backup
+    volumes:
+      - /srv/data/audiobookshelf/config:/config
+      - /srv/data/audiobookshelf/metadata:/metadata
+      - /srv/data/audiobookshelf/backup:/backup
+      - /srv/data/audiobookshelf/audiobooks:/audiobooks
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:80/healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.audiobookshelf.rule=Host(`${ABS_HOST}`)
+      - traefik.http.routers.audiobookshelf.entrypoints=web
+      - traefik.http.services.audiobookshelf.loadbalancer.server.port=80
+
+networks:
+  proxy:
+    external: true

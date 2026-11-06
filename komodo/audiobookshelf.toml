@@ -1,0 +1,15 @@
+# App stack: no "deploy = true". The first deploy is done by the migration cutover
+# (homelab-komodo: task migrate:cutover APP=audiobookshelf).
+[[stack]]
+name = "audiobookshelf"
+description = "Audiobook and podcast server"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/audiobookshelf"
+webhook_enabled = false
+environment = """
+ABS_HOST=books.pmsys.dev
+"""

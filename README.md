@@ -69,3 +69,4 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | `docmost`    | `docs.apps.lan`                       | intern, Postgres (`db`), eigenes Redis, Secrets `DOCMOST_*` |
 | `pgadmin`    | `pgadmin.apps.lan`                    | intern, Netzwerk `db`, Login aus der migrierten Config-DB   |
 | `navidrome`  | `music.pmsys.dev`                     | öffentlich, Musik vom NAS (`/mnt/music`, nur lesend)        |
+| `audiobookshelf` | `books.pmsys.dev`                  | öffentlich, Hörbücher lokal (~90 GB), Version fest 2.35.0  |
