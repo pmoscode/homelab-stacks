@@ -1,0 +1,25 @@
+# Zoraxy: public entry point (WAN 80/443 via UniFi port forwarding). Runs on the UGreen NAS
+# (Komodo server nas-ugreen), replaces LXC 100 (10.0.1.17) on the old Proxmox.
+# Fresh setup, rules are configured in the web UI (http://<nas>:8000), state in ${ZORAXY_DATA}:
+#   *.pmsys.dev -> http://10.0.1.230:80 (Traefik on apps-node-1 routes by Host header)
+#   TLS: wildcard *.pmsys.dev via ACME DNS-01 (token is entered in Zoraxy, stays on the NAS)
+# Traefik trusts X-Forwarded-* only from ZORAXY_IP (homelab-stacks: komodo/traefik.toml).
+# No Docker socket (container discovery not needed), no mDNS, no FASTGEOIP (+1 GB RAM).
+services:
+  zoraxy:
+    image: zoraxydocker/zoraxy:v3.3.4
+    container_name: zoraxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8000:8000"   # management UI, LAN only (UniFi forwards only 80/443)
+    environment:
+      TZ: Europe/Berlin
+      PORT: "8000"
+      MDNS: "false"
+      FASTGEOIP: "false"
+      ZEROTIER: "false"
+    volumes:
+      - ${ZORAXY_DATA}/config:/opt/zoraxy/config
+      - ${ZORAXY_DATA}/plugin:/opt/zoraxy/plugin

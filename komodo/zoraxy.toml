@@ -1,0 +1,16 @@
+# Push only after the server nas-ugreen exists in Komodo (homelab-komodo: appliance_nodes),
+# a stack on an unknown server breaks the resource sync.
+# Not "deploy = true": the first deploy happens by hand, when the UniFi forwarding is switched.
+[[stack]]
+name = "zoraxy"
+description = "Public reverse proxy (WAN 80/443), on the UGreen NAS"
+
+[stack.config]
+server = "nas-ugreen"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/zoraxy"
+webhook_enabled = false
+environment = """
+ZORAXY_DATA=/volume1/docker/zoraxy
+"""
