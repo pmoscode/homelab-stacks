@@ -4,6 +4,9 @@
 # NB_SETUP_KEY is only used for the first login; the peer identity lives in /srv/data/netbird.
 # Firewall (homelab-komodo, role base): wt0 is trusted in input, the access policies of the
 # NetBird console are enforced by the client in its own nftables table.
+# Apps on this host (*.apps.lan -> 10.0.1.230) are DNAT'ed by Docker to container IPs, which the
+# route rule (10.0.1.0/24) does not cover. They need an access policy to this peer itself
+# (e.g. group apps-node, TCP 80/443); NetBird then marks that traffic in prerouting and accepts it.
 services:
   netbird:
     image: netbirdio/netbird:0.82.0
