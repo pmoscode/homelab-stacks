@@ -93,3 +93,5 @@ liegt, und schließt den Alarm wieder, wenn er darunter fällt. Platten zählen 
 Gatus (`stacks/gatus/config.yaml`) prüft vom NAS aus jede App über ihren normalen Hostnamen und meldet an dasselbe
 ntfy-Topic: nach drei Fehlschlägen in Folge (3 min), Entwarnung nach zwei guten. Zertifikate: öffentlich mindestens
 14 Tage, `*.apps.lan` mindestens 30 Tage Restlaufzeit. Neue App: Endpoint in `config.yaml` ergänzen.
+Das nächtliche Backup (homelab-komodo, Rolle `backup`) meldet sich als externer Endpoint `backup/apps-node-1`: Alarm
+bei einem Fehler oder wenn 25 h keine Meldung kommt.

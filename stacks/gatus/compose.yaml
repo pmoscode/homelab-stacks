@@ -15,6 +15,7 @@ services:
       GATUS_CONFIG_PATH: /config/config.yaml
       SSL_CERT_DIR: /etc/ssl/homelab
       NTFY_TOPIC: ${NTFY_TOPIC}
+      GATUS_BACKUP_TOKEN: ${GATUS_BACKUP_TOKEN}
     volumes:
       - ./config.yaml:/config/config.yaml:ro
       - ./homelab-root-ca.crt:/etc/ssl/homelab/homelab-root-ca.crt:ro

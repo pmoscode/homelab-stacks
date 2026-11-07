@@ -1,6 +1,6 @@
 # Checks run from the NAS. *.pmsys.dev resolves to Zoraxy (UniFi split DNS), so the public
 # checks cover Zoraxy -> Traefik -> app, but not the UniFi port forwarding from the WAN.
-# ${NTFY_TOPIC} comes from the environment (Komodo secret variable).
+# ${NTFY_TOPIC} and ${GATUS_BACKUP_TOKEN} come from the environment (Komodo secret variables).
 storage:
   type: sqlite
   path: /data/data.db
@@ -118,3 +118,16 @@ endpoints:
     url: http://10.0.1.15:8000/
     conditions:
       - "[STATUS] < 500"
+
+# Pushed by the nightly backup on apps-node-1 (homelab-komodo: role backup, key backup_apps-node-1).
+# Alarm on a failed run or when no report arrives for 25 h (timer missed, host down).
+external-endpoints:
+  - name: apps-node-1
+    group: backup
+    token: "${GATUS_BACKUP_TOKEN}"
+    heartbeat:
+      interval: 25h
+    alerts:
+      - type: ntfy
+        failure-threshold: 1
+        success-threshold: 1

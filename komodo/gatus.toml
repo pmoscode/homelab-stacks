@@ -13,4 +13,5 @@ webhook_enabled = false
 environment = """
 GATUS_DATA=/volume1/docker/gatus
 NTFY_TOPIC=[[NTFY_TOPIC]]
+GATUS_BACKUP_TOKEN=[[GATUS_BACKUP_TOKEN]]
 """

@@ -8,7 +8,11 @@ services:
     image: jlesage/jdownloader-2:v26.03.1
     container_name: jdownloader
     restart: unless-stopped
+    # Without a limit the JVM takes up to 1/4 of the host RAM (~1.7 GB in use).
+    # Heap 768 MB, plus non-heap, Xvnc and the web UI; mem_limit is the hard stop.
+    mem_limit: 1280m
     environment:
+      JDOWNLOADER_MAX_MEM: 768M
       USER_ID: "1000"
       GROUP_ID: "1000"
       MYJDOWNLOADER_EMAIL: ${JD_MYJD_EMAIL}
