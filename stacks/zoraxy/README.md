@@ -24,6 +24,14 @@ Default-Site: „404 Not Found“. Kein Wildcard-Proxy auf Traefik, damit nur fr
 - Ein Zertifikat `*.pmsys.dev` per DNS-01, Anbieter **deSEC** (Nameserver `ns1.desec.io`). Token in deSEC neu anlegen,
   nur für die Domain `pmsys.dev`, und nur in Zoraxy eintragen.
 - Alle Regeln verwenden das Wildcard-Zertifikat, keine Einzelzertifikate mehr.
+- **deSEC: `PollingInterval` = `60`** (Propagation Timeout 600). Mit dem Standard (2 s) prüft lego, sobald der
+  nächste deSEC-Server den TXT-Eintrag hat, und Let's Encrypt scheitert in der „secondary validation“ an einem
+  Standort, bei dem er noch fehlt. Mit 60 s wartet lego nach der ersten (fehlschlagenden) Prüfung eine Minute.
+- Der UniFi-Content-Filter („Werbung“, Quelle LAN) leitet alle DNS-Anfragen auf die UniFi um und cacht sie, auch
+  die von lego an `ns1.desec.io`. Bei Neuversuchen innerhalb einer Stunde sieht lego dann alte TXT-Werte. Für eine
+  manuelle Anforderung den Filter kurz abschalten. Die automatische Erneuerung (täglich ab 30 Tage vor Ablauf) ist
+  davon kaum betroffen, den Ablauf soll später Gatus überwachen.
+- Erstes Zertifikat ausgestellt am 2026-11-07.
 
 ## Zugriff
 
