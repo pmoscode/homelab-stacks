@@ -1,0 +1,22 @@
+# NetBird client (NetBird Cloud) as routing peer for the LAN. Replaces LXC 103 on the old Proxmox.
+# Host network: the route to the LAN (set in the NetBird console, masquerade on) leaves through
+# the host's interface. Kernel WireGuard (module on Debian 13), /dev/net/tun only as fallback.
+# NB_SETUP_KEY is only used for the first login; the peer identity lives in /srv/data/netbird.
+# Firewall (homelab-komodo, role base): wt0 is trusted in input, the access policies of the
+# NetBird console are enforced by the client in its own nftables table.
+services:
+  netbird:
+    image: netbirdio/netbird:0.82.0
+    container_name: netbird
+    hostname: ${NB_HOSTNAME}
+    restart: unless-stopped
+    network_mode: host
+    cap_add: [NET_ADMIN, SYS_ADMIN, SYS_RESOURCE]
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      NB_SETUP_KEY: ${NB_SETUP_KEY}
+      NB_HOSTNAME: ${NB_HOSTNAME}
+      NB_LOG_LEVEL: info
+    volumes:
+      - /srv/data/netbird:/var/lib/netbird

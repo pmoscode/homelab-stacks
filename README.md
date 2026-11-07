@@ -63,6 +63,7 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 |--------------|---------------------------------------|-------------------------------------------------------------|
 | `traefik`    | –                                     | Port 80/443, mit Socket-Proxy, `deploy = true`              |
 | `postgres`   | –                                     | Postgres 17.5 für alle Apps, Netzwerk `db`, `deploy = true` |
+| `netbird`    | –                                     | Routing-Peer (NetBird Cloud) für das LAN, Host-Netzwerk, `deploy = true` |
 | `excalidraw` | `draw.pmsys.dev`, `ws-draw.pmsys.dev` | öffentlich, zustandslos, Collab-Server braucht eigene Route |
 | `homarr`     | `home.apps.lan`                       | intern, SQLite, Secret `HOMARR_SECRET_ENCRYPTION_KEY`       |
 | `trmnl`      | `trmnl.pmsys.dev`                     | öffentlich, SQLite, `APP_KEY` aus dem Image                 |

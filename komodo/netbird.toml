@@ -1,0 +1,18 @@
+# Infrastructure stack: deployed by the resource sync (deploy = true).
+# NB_SETUP_KEY is a Komodo secret variable (homelab-komodo vault: vault_komodo_variables).
+# Create a one-off setup key in the NetBird console before the first deploy.
+[[stack]]
+name = "netbird"
+description = "NetBird routing peer for the LAN"
+deploy = true
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/netbird"
+webhook_enabled = false
+environment = """
+NB_HOSTNAME=apps-node-1
+NB_SETUP_KEY=[[NB_SETUP_KEY]]
+"""
