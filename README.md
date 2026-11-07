@@ -10,7 +10,7 @@ komodo/<name>.toml           Komodo-Ressourcen (Resource Sync liest den ganzen O
 
 ## Regeln
 
-- **Infrastruktur** (Traefik, Postgres, NetBird) hat `deploy = true`, die Sync deployt sie.
+- **Infrastruktur** (Traefik, Postgres, NetBird, Gatus) hat `deploy = true`, die Sync deployt sie.
 - **App-Stacks ohne `deploy = true`.** Den ersten Deploy macht der Migrations-Cutover in `homelab-komodo`, danach
   Komodo (UI oder Sync).
 - Images mit fester Version, nie `latest`. Bei der Migration dieselbe Version wie im Cluster.
@@ -65,6 +65,7 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | `postgres`   | –                                     | Postgres 17.5 für alle Apps, Netzwerk `db`, `deploy = true` |
 | `netbird`    | –                                     | Routing-Peer (NetBird Cloud) für das LAN, Host-Netzwerk, `deploy = true` |
 | `zoraxy`     | `*.pmsys.dev` (öffentlich)            | auf dem UGreen-NAS (`nas-ugreen`), WAN 80/443, Wildcard per DNS-01 |
+| `gatus`      | `http://<nas>:8080` (LAN)             | auf `nas-ugreen`, HTTP- und Zertifikatsprüfung aller Apps, Alarm an ntfy, `deploy = true` |
 | `excalidraw` | `draw.pmsys.dev`, `ws-draw.pmsys.dev` | öffentlich, zustandslos, Collab-Server braucht eigene Route |
 | `homarr`     | `home.apps.lan`                       | intern, SQLite, Secret `HOMARR_SECRET_ENCRYPTION_KEY`       |
 | `trmnl`      | `trmnl.pmsys.dev`                     | öffentlich, SQLite, `APP_KEY` aus dem Image                 |
@@ -88,3 +89,7 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 Komodo meldet CPU, RAM und Platte erst, wenn der Wert zwei Messungen hintereinander (ca. 10 s) über der Schwelle
 liegt, und schließt den Alarm wieder, wenn er darunter fällt. Platten zählen nur, wenn die Periphery sie meldet
 (`include_disk_mounts`, setzt homelab-komodo). Nach einem Push meldet die Sync außerdem „Pending“, bis sie läuft.
+
+Gatus (`stacks/gatus/config.yaml`) prüft vom NAS aus jede App über ihren normalen Hostnamen und meldet an dasselbe
+ntfy-Topic: nach drei Fehlschlägen in Folge (3 min), Entwarnung nach zwei guten. Zertifikate: öffentlich mindestens
+14 Tage, `*.apps.lan` mindestens 30 Tage Restlaufzeit. Neue App: Endpoint in `config.yaml` ergänzen.

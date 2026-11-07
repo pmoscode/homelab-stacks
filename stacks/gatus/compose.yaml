@@ -1,0 +1,21 @@
+# Gatus: HTTP and certificate checks of all apps, alerts to the same ntfy topic as Komodo.
+# Runs on the UGreen NAS (nas-ugreen), so it still reports when apps-node-1 (and with it
+# Komodo Core) is down. Komodo in turn reports when the NAS is unreachable.
+# UI: http://<nas>:8080 (LAN only). History in ${GATUS_DATA} (SQLite).
+# *.apps.lan is signed by the own CA: SSL_CERT_DIR adds its root to the system pool
+# (Go still reads /etc/ssl/certs/ca-certificates.crt). Copy of homelab-komodo: ca/homelab-root-ca.crt.
+services:
+  gatus:
+    image: twinproduction/gatus:v5.38.0
+    container_name: gatus
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      GATUS_CONFIG_PATH: /config/config.yaml
+      SSL_CERT_DIR: /etc/ssl/homelab
+      NTFY_TOPIC: ${NTFY_TOPIC}
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro
+      - ./homelab-root-ca.crt:/etc/ssl/homelab/homelab-root-ca.crt:ro
+      - ${GATUS_DATA}:/data

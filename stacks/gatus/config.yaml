@@ -1,0 +1,120 @@
+# Checks run from the NAS. *.pmsys.dev resolves to Zoraxy (UniFi split DNS), so the public
+# checks cover Zoraxy -> Traefik -> app, but not the UniFi port forwarding from the WAN.
+# ${NTFY_TOPIC} comes from the environment (Komodo secret variable).
+storage:
+  type: sqlite
+  path: /data/data.db
+
+web:
+  port: 8080
+
+ui:
+  title: Homelab Status
+  header: Homelab
+
+alerting:
+  ntfy:
+    url: https://ntfy.sh
+    topic: "${NTFY_TOPIC}"
+    priority: 4
+    click: http://10.0.1.15:8080
+    # Alert after 3 failed checks in a row (3 min), all clear after 2 good ones.
+    default-alert:
+      failure-threshold: 3
+      success-threshold: 2
+      send-on-resolved: true
+
+# Shared settings, merged into the endpoints below (Gatus ignores unknown top-level keys).
+# Zoraxy renews the public wildcard by itself (ACME auto renew), *.apps.lan is renewed
+# by Ansible (homelab-komodo: tls_internal), hence the longer lead time.
+x-public: &public
+  group: public
+  interval: 1m
+  alerts: [{ type: ntfy }]
+x-public-conditions: &public-conditions
+  - "[STATUS] == 200"
+  - "[CERTIFICATE_EXPIRATION] > 336h"
+x-internal: &internal
+  group: internal
+  interval: 1m
+  alerts: [{ type: ntfy }]
+x-internal-conditions: &internal-conditions
+  - "[STATUS] == 200"
+  - "[CERTIFICATE_EXPIRATION] > 720h"
+
+endpoints:
+  # Public, through Zoraxy (nas-ugreen) and Traefik (apps-node-1)
+  - name: Audiobookshelf
+    <<: *public
+    url: https://books.pmsys.dev/healthcheck
+    conditions: *public-conditions
+  - name: Excalidraw
+    <<: *public
+    url: https://draw.pmsys.dev/
+    conditions: *public-conditions
+  - name: Excalidraw Collab
+    <<: *public
+    url: https://ws-draw.pmsys.dev/socket.io/?EIO=4&transport=polling
+    conditions: *public-conditions
+  - name: Navidrome
+    <<: *public
+    url: https://music.pmsys.dev/ping
+    conditions: *public-conditions
+  - name: trmnl
+    <<: *public
+    url: https://trmnl.pmsys.dev/up
+    conditions: *public-conditions
+  - name: Vaultwarden
+    <<: *public
+    url: https://vault.pmsys.dev/alive
+    conditions: *public-conditions
+  - name: Emby
+    <<: *public
+    url: https://emby.pmsys.dev/emby/System/Info/Public
+    conditions: *public-conditions
+
+  # Internal, Traefik :443 on apps-node-1, own CA
+  - name: Homarr
+    <<: *internal
+    url: https://home.apps.lan/api/health/ready
+    conditions: *internal-conditions
+  - name: Docmost
+    <<: *internal
+    url: https://docs.apps.lan/api/health
+    conditions: *internal-conditions
+  - name: Paperless
+    <<: *internal
+    url: https://paperless.apps.lan/accounts/login/
+    conditions: *internal-conditions
+  - name: OpenCloud
+    <<: *internal
+    url: https://cloud.apps.lan/status.php
+    conditions: *internal-conditions
+  - name: pgAdmin
+    <<: *internal
+    url: https://pgadmin.apps.lan/misc/ping
+    conditions: *internal-conditions
+  - name: JDownloader
+    <<: *internal
+    url: https://jd.apps.lan/
+    conditions: *internal-conditions
+  - name: Toniebox-Manager
+    <<: *internal
+    url: https://tonie.apps.lan/health
+    conditions: *internal-conditions
+
+  # Infrastructure
+  - name: Komodo Core
+    group: infrastructure
+    interval: 1m
+    alerts: [{ type: ntfy }]
+    url: http://10.0.1.230:9120/version
+    conditions:
+      - "[STATUS] == 200"
+  - name: Zoraxy
+    group: infrastructure
+    interval: 1m
+    alerts: [{ type: ntfy }]
+    url: http://10.0.1.15:8000/
+    conditions:
+      - "[STATUS] < 500"
