@@ -25,12 +25,13 @@ services:
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     network_mode: none
+    # bollard (lazymc) sends paths without the /v1.xx prefix, hence optional
     environment:
       SP_PROXYSOCKETENDPOINT: /run/proxy/docker.sock
       SP_ALLOW_HEAD: /_ping
       SP_ALLOW_GET: /_ping
-      SP_ALLOW_GET_2: /v1\.[0-9]+/(version|containers/json.*)
-      SP_ALLOW_POST: /v1\.[0-9]+/containers/[a-zA-Z0-9_.-]+/(start|stop).*
+      SP_ALLOW_GET_2: (/v1\.[0-9]+)?/(version|containers/json.*)
+      SP_ALLOW_POST: (/v1\.[0-9]+)?/containers/[a-zA-Z0-9_.-]+/(start|stop).*
       SP_WATCHDOGINTERVAL: "60"
       SP_STOPONWATCHDOG: "true"
     volumes:
