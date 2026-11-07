@@ -1,0 +1,17 @@
+# Not "deploy = true": the first deploy happens after the world copy from LXC 104.
+# send_alerts = false: lazymc stops the server container whenever nobody plays, Komodo would
+# report every stop. Gatus checks lazymc (port 25565) instead.
+[[stack]]
+name = "minecraft"
+description = "Minecraft (Fabric, LAN only), started on demand by lazymc"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/minecraft"
+webhook_enabled = false
+send_alerts = false
+environment = """
+MC_HOST=mc.apps.lan
+"""

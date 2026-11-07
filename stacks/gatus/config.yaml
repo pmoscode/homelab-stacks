@@ -103,6 +103,15 @@ endpoints:
     url: https://tonie.apps.lan/health
     conditions: *internal-conditions
 
+  # lazymc answers on 25565 also while the Minecraft server sleeps (no wake-up, plain TCP connect)
+  - name: Minecraft (lazymc)
+    group: internal
+    interval: 1m
+    alerts: [{ type: ntfy }]
+    url: tcp://10.0.1.230:25565
+    conditions:
+      - "[CONNECTED] == true"
+
   # Infrastructure
   - name: Komodo Core
     group: infrastructure

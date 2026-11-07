@@ -78,6 +78,7 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | `paperless`  | `paperless.apps.lan`                  | intern, Postgres (`db`), eigenes Redis, consume auf dem NAS |
 | `opencloud`  | `cloud.apps.lan`                      | intern, PosixFS auf dem NAS (`/mnt/opencloud`), eingebauter IdP |
 | `vaultwarden`    | `vault.pmsys.dev`                  | öffentlich, SQLite, Admin-Token/SMTP in `config.json`      |
+| `minecraft`  | `mc.apps.lan:25565`, Karte `:8080`    | intern, Fabric 26.2, lazymc startet den Server bei Bedarf, Komodo-Alarme aus |
 
 ## Komodo-Ressourcen außer Stacks
 
