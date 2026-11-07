@@ -1,0 +1,15 @@
+# App stack: no "deploy = true". The first deploy is done by the migration cutover
+# (homelab-komodo: task migrate:cutover APP=vaultwarden).
+[[stack]]
+name = "vaultwarden"
+description = "Password manager (Bitwarden compatible)"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/vaultwarden"
+webhook_enabled = false
+environment = """
+VW_HOST=vault.pmsys.dev
+"""

@@ -1,0 +1,28 @@
+# Vaultwarden (from k8s). Public: https://${VW_HOST} via Zoraxy.
+# Same image as in k8s (1.37.4-alpine). SQLite, keys, attachments in /srv/data/vaultwarden.
+# /data/config.json (admin panel settings) overrides the environment: admin token, SMTP and
+# domain live there. The migration sets its "domain" to https://${VW_HOST}.
+# Runs as nobody (65534) like in k8s; the image's own healthcheck uses ROCKET_PORT.
+services:
+  vaultwarden:
+    image: ghcr.io/dani-garcia/vaultwarden:1.37.4-alpine
+    container_name: vaultwarden
+    restart: unless-stopped
+    user: "65534:65534"
+    environment:
+      TZ: Europe/Berlin
+      DOMAIN: https://${VW_HOST}
+      ROCKET_PORT: "8080"
+      SIGNUPS_ALLOWED: "false"
+    volumes:
+      - /srv/data/vaultwarden:/data
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.vaultwarden.rule=Host(`${VW_HOST}`)
+      - traefik.http.routers.vaultwarden.entrypoints=web
+      - traefik.http.services.vaultwarden.loadbalancer.server.port=8080
+
+networks:
+  proxy:
+    external: true
