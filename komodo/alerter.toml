@@ -1,0 +1,11 @@
+# Alerts for every resource (servers, stacks, syncs) as push via ntfy.sh.
+# The topic is the only protection, so it lives in the secret variable NTFY_TOPIC
+# (homelab-komodo: vault_komodo_variables). Core fills it in when sending.
+[[alerter]]
+name = "ntfy"
+description = "Push to the ntfy app (ntfy.sh)"
+
+[alerter.config]
+enabled = true
+endpoint.type = "Ntfy"
+endpoint.params.url = "https://ntfy.sh/[[NTFY_TOPIC]]"

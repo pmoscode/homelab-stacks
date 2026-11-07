@@ -1,0 +1,31 @@
+# Alert thresholds of the servers. The servers themselves are created by the onboarding
+# (homelab-komodo: komodo_periphery), the sync only updates the fields listed here.
+# enabled must stay: it defaults to false and would disable the server.
+# CPU counts after two polls in a row (about 10 s), hence high values.
+# Disks: only the mounts in include_disk_mounts of the Periphery config.
+
+[[server]]
+name = "apps-node-1"
+description = "Lenovo M920q, Debian 13, all apps"
+
+[server.config]
+enabled = true
+cpu_warning = 95.0
+cpu_critical = 99.0
+mem_warning = 80.0
+mem_critical = 95.0
+disk_warning = 80.0     # /var is only 12 GB
+disk_critical = 90.0
+
+[[server]]
+name = "nas-ugreen"
+description = "UGreen NAS (N100, UGOS), Zoraxy"
+
+[server.config]
+enabled = true
+cpu_warning = 95.0
+cpu_critical = 99.0
+mem_warning = 80.0
+mem_critical = 95.0
+disk_warning = 80.0
+disk_critical = 90.0

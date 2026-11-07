@@ -10,7 +10,7 @@ komodo/<name>.toml           Komodo-Ressourcen (Resource Sync liest den ganzen O
 
 ## Regeln
 
-- **Infrastruktur** (Traefik, Postgres, Monitoring) hat `deploy = true`, die Sync deployt sie.
+- **Infrastruktur** (Traefik, Postgres, NetBird) hat `deploy = true`, die Sync deployt sie.
 - **App-Stacks ohne `deploy = true`.** Den ersten Deploy macht der Migrations-Cutover in `homelab-komodo`, danach
   Komodo (UI oder Sync).
 - Images mit fester Version, nie `latest`. Bei der Migration dieselbe Version wie im Cluster.
@@ -77,3 +77,14 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | `paperless`  | `paperless.apps.lan`                  | intern, Postgres (`db`), eigenes Redis, consume auf dem NAS |
 | `opencloud`  | `cloud.apps.lan`                      | intern, PosixFS auf dem NAS (`/mnt/opencloud`), eingebauter IdP |
 | `vaultwarden`    | `vault.pmsys.dev`                  | öffentlich, SQLite, Admin-Token/SMTP in `config.json`      |
+
+## Komodo-Ressourcen außer Stacks
+
+| Datei                 | Inhalt                                                                                   |
+|-----------------------|------------------------------------------------------------------------------------------|
+| `komodo/alerter.toml` | Alerter `ntfy`: alle Alarme als Push über ntfy.sh, Topic aus der Secret-Variable `NTFY_TOPIC` |
+| `komodo/servers.toml` | Schwellen für CPU, RAM und Platte je Server. Die Server legt das Onboarding an, die Sync ändert nur die genannten Felder |
+
+Komodo meldet CPU, RAM und Platte erst, wenn der Wert zwei Messungen hintereinander (ca. 10 s) über der Schwelle
+liegt, und schließt den Alarm wieder, wenn er darunter fällt. Platten zählen nur, wenn die Periphery sie meldet
+(`include_disk_mounts`, setzt homelab-komodo). Nach einem Push meldet die Sync außerdem „Pending“, bis sie läuft.
