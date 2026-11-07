@@ -98,17 +98,17 @@ services:
       - lazymc.group=minecraft
       - lazymc.server.address=172.30.0.3:25565
       - lazymc.server.directory=/server
-      # Wake the server once when lazymc starts, so the server list shows the real version and MOTD.
+      # Wake the server once when lazymc starts, so the server list shows the real version.
       - lazymc.server.probe_on_start=true
       - lazymc.server.wake_whitelist=true
       - lazymc.time.sleep_after=600
       - lazymc.time.minimum_online_time=300
       - lazymc.join.methods=hold,kick
       - lazymc.join.hold.timeout=25
+      # No motd.from_server: it would replace these state messages with the cached server MOTD.
       - lazymc.motd.sleeping=☠ Server schläft – beitreten zum Starten
       - lazymc.motd.starting=§2☻ Server startet …
       - lazymc.motd.stopping=☠ Server fährt herunter …
-      - lazymc.motd.from_server=true
       - lazymc.join.kick.starting=Server startet, bitte in einer Minute noch einmal verbinden.
       - lazymc.join.kick.stopping=Server fährt gerade herunter, bitte gleich noch einmal versuchen.
 
