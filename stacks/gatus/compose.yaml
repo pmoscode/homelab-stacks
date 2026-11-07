@@ -17,6 +17,8 @@ services:
       NTFY_TOPIC: ${NTFY_TOPIC}
       GATUS_BACKUP_TOKEN: ${GATUS_BACKUP_TOKEN}
     volumes:
-      - ./config.yaml:/config/config.yaml:ro
+      # Directory, not the file: git replaces the file on pull, a file mount would keep the old
+      # version. Gatus reloads the config by itself when it changes.
+      - ./config:/config:ro
       - ./homelab-root-ca.crt:/etc/ssl/homelab/homelab-root-ca.crt:ro
       - ${GATUS_DATA}:/data
