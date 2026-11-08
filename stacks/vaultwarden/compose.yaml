@@ -5,7 +5,7 @@
 # Runs as nobody (65534) like in k8s; the image's own healthcheck uses ROCKET_PORT.
 services:
   vaultwarden:
-    image: ghcr.io/dani-garcia/vaultwarden:1.37.4-alpine
+    image: ghcr.io/dani-garcia/vaultwarden:1.37.5-alpine
     container_name: vaultwarden
     restart: unless-stopped
     user: "65534:65534"
