@@ -18,7 +18,7 @@ services:
       - traefik.http.services.excalidraw.loadbalancer.server.port=80
 
   excalidraw-collab:
-    image: pmoscode/excalidraw-collab-server:1.0.0
+    image: pmoscode/excalidraw-collab-server:1.1.0
     container_name: excalidraw-collab
     restart: unless-stopped
     networks: [proxy]
