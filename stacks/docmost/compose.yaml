@@ -5,7 +5,7 @@
 # APP_SECRET must stay the one from k8s, otherwise all sessions and tokens become invalid.
 services:
   docmost:
-    image: docmost/docmost:0.25.3
+    image: docmost/docmost:0.97.0
     container_name: docmost
     restart: unless-stopped
     depends_on:
