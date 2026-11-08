@@ -13,7 +13,8 @@ komodo/<name>.toml           Komodo-Ressourcen (Resource Sync liest den ganzen O
 - **Infrastruktur** (Traefik, Postgres, NetBird, Gatus) hat `deploy = true`, die Sync deployt sie.
 - **App-Stacks ohne `deploy = true`.** Den ersten Deploy macht der Migrations-Cutover in `homelab-komodo`, danach
   Komodo (UI oder Sync).
-- Images mit fester Version, nie `latest`. Bei der Migration dieselbe Version wie im Cluster.
+- Images mit fester Version, nie `latest`. Bei der Migration dieselbe Version wie im Cluster, Updates danach über
+  Renovate (siehe unten).
 - Hostnamen und andere Werte je Stack stehen im `environment` der TOML (wird zur `.env` im Stack-Ordner) und werden
   in der Compose-Datei als `${VAR}` genutzt. Secrets als Komodo-Variable `[[NAME]]`, nie im Repo.
 
@@ -96,3 +97,18 @@ ntfy-Topic: nach drei Fehlschlägen in Folge (3 min), Entwarnung nach zwei guten
 14 Tage, `*.apps.lan` mindestens 30 Tage Restlaufzeit. Neue App: Endpoint in `config/config.yaml` ergänzen, Gatus lädt ihn nach dem Deploy von selbst.
 Das nächtliche Backup (homelab-komodo, Rolle `backup`) meldet sich als externer Endpoint `backup/apps-node-1`: Alarm
 bei einem Fehler oder wenn 25 h keine Meldung kommt.
+
+## Updates (Renovate)
+
+Renovate (Mend-App auf GitHub, Konfiguration in `renovate.json5`) prüft die Image-Tags in `stacks/*/compose.yaml`
+einmal pro Woche (montags vor 4 Uhr) und schlägt jedes Update als eigenen Pull Request vor. Nichts wird automatisch
+gemergt. Die Übersicht steht im Issue „Dependency Dashboard“.
+
+- **Major-Updates** erst nach Haken im Dependency Dashboard, vorher Release Notes und Migrationshinweise lesen.
+- **Postgres** bekommt keine Major-Updates (17 → 18 braucht Dump und Restore), Minor-Updates schon.
+- **Toniebox-Manager** ist ausgenommen, das eigene Image hat nur Tags `main-<commit>`.
+- **trmnl:** vor dem ersten Update `APP_KEY` als Komodo-Secret festlegen, sonst kommt mit dem neuen Image ein neuer Schlüssel.
+- **Minecraft:** Das Image-Update ändert nur den Starter, Spielversion, Fabric und Mods stehen fest im `environment`.
+
+Ein Merge deployt nicht: Die Sync deployt nur bei Änderungen an einer TOML neu, auch für Stacks mit `deploy = true`.
+Nach dem Merge den Stack in Komodo deployen (Stack → Deploy) und kurz prüfen, ob Gatus grün bleibt.

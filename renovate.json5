@@ -1,0 +1,40 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: ['config:recommended', 'schedule:weekly'],
+  timezone: 'Europe/Berlin',
+  // Image tags stay pinned in compose.yaml; every update arrives as a pull request.
+  // Merging does not deploy: Resource Sync only redeploys on TOML changes, so deploy the stack in Komodo.
+  automerge: false,
+  packageRules: [
+    {
+      description: 'Major updates only after approval in the dependency dashboard (check release notes and migrations first).',
+      matchUpdateTypes: ['major'],
+      dependencyDashboardApproval: true,
+    },
+    {
+      description: 'PostgreSQL major upgrades need a dump and restore, never offer them.',
+      matchDatasources: ['docker'],
+      matchPackageNames: ['postgres'],
+      matchUpdateTypes: ['major'],
+      enabled: false,
+    },
+    {
+      description: 'Own image tagged by branch and commit (main-<sha>), not versionable.',
+      matchDatasources: ['docker'],
+      matchPackageNames: ['ghcr.io/pmoscode/toniebox-manager'],
+      enabled: false,
+    },
+    {
+      description: 'The image ships its own APP_KEY, an upgrade would replace it.',
+      matchDatasources: ['docker'],
+      matchPackageNames: ['ghcr.io/usetrmnl/byos_laravel'],
+      prBodyNotes: ['Set `APP_KEY` as a Komodo secret variable before merging, otherwise sessions and encrypted data are lost.'],
+    },
+    {
+      description: 'Minecraft version, Fabric loader and mods are pinned in the environment, the image update only changes the launcher.',
+      matchDatasources: ['docker'],
+      matchPackageNames: ['itzg/minecraft-server'],
+      prBodyNotes: ['`VERSION`, `FABRIC_LOADER_VERSION` and `MODRINTH_PROJECTS` stay unchanged. Deploy, then join once to verify.'],
+    },
+  ],
+}
