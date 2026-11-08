@@ -69,7 +69,7 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | `gatus`      | `http://<nas>:8080` (LAN)             | auf `nas-ugreen`, HTTP- und Zertifikatsprüfung aller Apps, Alarm an ntfy, `deploy = true` |
 | `excalidraw` | `draw.pmsys.dev`, `ws-draw.pmsys.dev` | öffentlich, zustandslos, Collab-Server braucht eigene Route |
 | `homarr`     | `home.apps.lan`                       | intern, SQLite, Secret `HOMARR_SECRET_ENCRYPTION_KEY`       |
-| `trmnl`      | `trmnl.pmsys.dev`                     | öffentlich, SQLite, `APP_KEY` aus dem Image                 |
+| `trmnl`      | `trmnl.pmsys.dev`                     | öffentlich, SQLite, Secret `TRMNL_APP_KEY`, `APP_URL` gesetzt |
 | `docmost`    | `docs.apps.lan`                       | intern, Postgres (`db`), eigenes Redis, Secrets `DOCMOST_*` |
 | `pgadmin`    | `pgadmin.apps.lan`                    | intern, Netzwerk `db`, Login aus der migrierten Config-DB   |
 | `navidrome`  | `music.pmsys.dev`                     | öffentlich, Musik vom NAS (`/mnt/music`, nur lesend)        |
@@ -107,7 +107,6 @@ gemergt. Die Übersicht steht im Issue „Dependency Dashboard“.
 - **Major-Updates** erst nach Haken im Dependency Dashboard, vorher Release Notes und Migrationshinweise lesen.
 - **Postgres** bekommt keine Major-Updates (17 → 18 braucht Dump und Restore), Minor-Updates schon.
 - **Toniebox-Manager** ist ausgenommen, das eigene Image hat nur Tags `main-<commit>`.
-- **trmnl:** vor dem ersten Update `APP_KEY` als Komodo-Secret festlegen, sonst kommt mit dem neuen Image ein neuer Schlüssel.
 - **Minecraft:** Das Image-Update ändert nur den Starter, Spielversion, Fabric und Mods stehen fest im `environment`.
 
 Ein Merge deployt nicht: Die Sync deployt nur bei Änderungen an einer TOML neu, auch für Stacks mit `deploy = true`.

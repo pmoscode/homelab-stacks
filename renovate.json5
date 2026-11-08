@@ -25,12 +25,6 @@
       enabled: false,
     },
     {
-      description: 'The image ships its own APP_KEY, an upgrade would replace it.',
-      matchDatasources: ['docker'],
-      matchPackageNames: ['ghcr.io/usetrmnl/byos_laravel'],
-      prBodyNotes: ['Set `APP_KEY` as a Komodo secret variable before merging, otherwise sessions and encrypted data are lost.'],
-    },
-    {
       description: 'Minecraft version, Fabric loader and mods are pinned in the environment, the image update only changes the launcher.',
       matchDatasources: ['docker'],
       matchPackageNames: ['itzg/minecraft-server'],
