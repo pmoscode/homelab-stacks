@@ -5,7 +5,7 @@
 # before an image upgrade, otherwise sessions and encrypted values may be lost.
 services:
   trmnl:
-    image: ghcr.io/usetrmnl/byos_laravel:0.21.0
+    image: ghcr.io/usetrmnl/byos_laravel:0.46.0
     container_name: trmnl
     restart: unless-stopped
     environment:
