@@ -6,7 +6,7 @@
 # APP_URL builds the image_url handed to the device; unset it is http://localhost.
 services:
   trmnl:
-    image: ghcr.io/usetrmnl/byos_laravel:0.21.0
+    image: ghcr.io/usetrmnl/byos_laravel:0.46.0
     container_name: trmnl
     restart: unless-stopped
     environment:
