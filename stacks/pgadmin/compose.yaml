@@ -5,7 +5,7 @@
 # On network "db" to reach the shared Postgres as host "postgres".
 services:
   pgadmin:
-    image: dpage/pgadmin4:9.18
+    image: dpage/pgadmin4:9.19
     container_name: pgadmin
     restart: unless-stopped
     environment:
