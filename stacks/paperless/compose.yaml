@@ -47,7 +47,7 @@ services:
       - traefik.http.services.paperless.loadbalancer.server.port=8000
 
   redis:
-    image: redis:8.10.2
+    image: redis:8.10.3
     container_name: paperless-redis
     restart: unless-stopped
     healthcheck:
