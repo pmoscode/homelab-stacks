@@ -4,7 +4,7 @@
 # (audiobooks ~90 GB). Library paths inside the container stay the same (/audiobooks).
 services:
   audiobookshelf:
-    image: ghcr.io/advplyr/audiobookshelf:2.35.0
+    image: ghcr.io/advplyr/audiobookshelf:2.37.2
     container_name: audiobookshelf
     restart: unless-stopped
     environment:
