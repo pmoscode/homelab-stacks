@@ -4,7 +4,7 @@
 # needs its own Zoraxy route (websockets enabled).
 services:
   excalidraw:
-    image: pmoscode/excalidraw:v0.18.0
+    image: pmoscode/excalidraw:v0.18.1
     container_name: excalidraw
     restart: unless-stopped
     environment:
