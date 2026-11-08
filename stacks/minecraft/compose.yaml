@@ -55,7 +55,7 @@ services:
       - /srv/data/minecraft:/server:ro   # server.properties, whitelist, banned IPs
 
   mc:
-    image: itzg/minecraft-server:2026.9.0-java25
+    image: itzg/minecraft-server:2026.10.1-java25
     container_name: minecraft
     restart: "no"
     tty: true
