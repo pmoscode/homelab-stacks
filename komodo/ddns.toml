@@ -1,0 +1,19 @@
+# Infrastructure: deployed by the Resource Sync itself (deploy = true).
+# DESEC_TOKEN is a Komodo secret variable (homelab-komodo vault: vault_komodo_variables).
+# Before the first deploy: *.pmsys.dev as CNAME to pmsys.dev in deSEC (see stacks/ddns/compose.yaml).
+[[stack]]
+name = "ddns"
+description = "DynDNS: public IPv4 to pmsys.dev at deSEC"
+deploy = true
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/ddns"
+webhook_enabled = false
+environment = """
+DDNS_DOMAIN=pmsys.dev
+DESEC_TOKEN=[[DESEC_TOKEN]]
+NTFY_TOPIC=[[NTFY_TOPIC]]
+"""

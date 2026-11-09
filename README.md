@@ -65,6 +65,7 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | `traefik`    | –                                     | Port 80/443, mit Socket-Proxy, `deploy = true`              |
 | `postgres`   | –                                     | Postgres 17.5 für alle Apps, Netzwerk `db`, `deploy = true` |
 | `netbird`    | –                                     | Routing-Peer (NetBird Cloud) für das LAN, Host-Netzwerk, `deploy = true` |
+| `ddns`       | –                                     | DynDNS: öffentliche IPv4 auf `pmsys.dev` (deSEC), `*.pmsys.dev` als CNAME darauf, Secret `DESEC_TOKEN`, `deploy = true` |
 | `zoraxy`     | `*.pmsys.dev` (öffentlich)            | auf dem UGreen-NAS (`nas-ugreen`), WAN 80/443, Wildcard per DNS-01 |
 | `gatus`      | `http://<nas>:8080` (LAN)             | auf `nas-ugreen`, HTTP- und Zertifikatsprüfung aller Apps, Alarm an ntfy, `deploy = true` |
 | `excalidraw` | `draw.pmsys.dev`, `ws-draw.pmsys.dev` | öffentlich, zustandslos, Collab-Server braucht eigene Route |

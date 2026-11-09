@@ -1,0 +1,26 @@
+# DynDNS for pmsys.dev at deSEC: keeps the A record of the apex on the current public IPv4.
+# Only the apex is updated. *.pmsys.dev must be a CNAME to pmsys.dev in deSEC (set by hand once),
+# because ddns-updater compares by DNS lookup and UniFi answers *.pmsys.dev with the LAN address
+# of Zoraxy (split DNS, all port-53 traffic is redirected to UniFi). The apex is not overridden there.
+# AAAA stays untouched (myipv6=preserve), the host has no global IPv6.
+# Public IP over HTTPS only: DNS-based echo services would be intercepted by UniFi as well.
+# No volume: the record state is read from DNS on every run, updates.json history is not needed.
+# DESEC_TOKEN is a Komodo secret variable (homelab-komodo vault), scoped to pmsys.dev.
+services:
+  ddns:
+    image: qmcgaw/ddns-updater:v2.10.0
+    container_name: ddns
+    restart: unless-stopped
+    environment:
+      CONFIG: >-
+        {"settings": [{"provider": "desec", "domain": "${DDNS_DOMAIN}",
+        "token": "${DESEC_TOKEN:?DESEC_TOKEN missing}", "ip_version": "ipv4"}]}
+      PERIOD: 5m
+      # deSEC caches stay up to the record TTL (3600 s), retry an update at most every 15 min.
+      UPDATE_COOLDOWN_PERIOD: 15m
+      PUBLICIP_FETCHERS: http
+      SERVER_ENABLED: "no"
+      SHOUTRRR_ADDRESSES: ntfy://ntfy.sh/${NTFY_TOPIC:?NTFY_TOPIC missing}
+      SHOUTRRR_DEFAULT_TITLE: DDNS pmsys.dev
+      TZ: Europe/Berlin
+      LOG_LEVEL: info
