@@ -6,7 +6,7 @@
 # No Docker socket (container discovery not needed), no mDNS, no FASTGEOIP (+1 GB RAM).
 services:
   zoraxy:
-    image: zoraxydocker/zoraxy:v3.3.4
+    image: zoraxydocker/zoraxy:v3.3.5
     container_name: zoraxy
     restart: unless-stopped
     ports:
