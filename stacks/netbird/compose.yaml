@@ -9,7 +9,7 @@
 # (e.g. group apps-node, TCP 80/443); NetBird then marks that traffic in prerouting and accepts it.
 services:
   netbird:
-    image: netbirdio/netbird:0.82.0
+    image: netbirdio/netbird:0.83.1
     container_name: netbird
     hostname: ${NB_HOSTNAME}
     restart: unless-stopped
