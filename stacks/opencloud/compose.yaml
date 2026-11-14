@@ -10,7 +10,7 @@
 # PROXY_ENABLE_BASIC_AUTH every app-token request first fails an IDM bind (slow, CPU heavy).
 services:
   opencloud:
-    image: opencloudeu/opencloud:7.2.4
+    image: opencloudeu/opencloud:7.2.5
     container_name: opencloud
     restart: unless-stopped
     user: "1000:1000"
