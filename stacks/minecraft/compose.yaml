@@ -39,7 +39,7 @@ services:
       - proxy-socket:/run/proxy
 
   lazymc:
-    image: ghcr.io/joesturge/lazymc-docker-proxy:v2.7.5
+    image: ghcr.io/joesturge/lazymc-docker-proxy:v2.8.0
     container_name: minecraft-lazymc
     restart: unless-stopped
     depends_on: [socket-proxy]
