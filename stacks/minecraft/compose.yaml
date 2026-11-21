@@ -76,6 +76,7 @@ services:
       FABRIC_LOADER_VERSION: 0.19.5
       FABRIC_LAUNCHER_VERSION: 1.1.2
       MODE: creative
+      DIFFICULTY: peaceful
       # Offline mode as before (accounts without Mojang login), only whitelisted names may join.
       ONLINE_MODE: "FALSE"
       ENFORCE_SECURE_PROFILE: "FALSE"
