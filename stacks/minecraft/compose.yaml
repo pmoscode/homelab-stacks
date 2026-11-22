@@ -14,7 +14,7 @@
 # lazymc needs fixed container IPs (it does not resolve the address again after a restart).
 #
 # squaremap (web map) and the resource pack: http://${MC_HOST}:8080, only while the server runs.
-# Ports 25565 and 8080 are opened for the LAN in homelab-komodo (host_vars/apps-node-1.yml).
+# Ports 25565, 8080 and 25575 (RCON) are opened for the LAN in homelab-komodo (host_vars/apps-node-1.yml).
 services:
   socket-proxy:
     image: wollomatic/socket-proxy:1.14.0
@@ -67,6 +67,7 @@ services:
         ipv4_address: 172.30.0.3
     ports:
       - "8080:8080"            # squaremap, resource pack
+      - "25575:25575"          # RCON (password, LAN only via firewall), only while the server runs
     environment:
       EULA: "TRUE"
       MEMORY: 3G
@@ -75,6 +76,9 @@ services:
       VERSION: "26.2"
       FABRIC_LOADER_VERSION: 0.19.5
       FABRIC_LAUNCHER_VERSION: 1.1.2
+      ENABLE_RCON: "TRUE"
+      RCON_PORT: 25575
+      RCON_PASSWORD: ${MC_RCON_PASSWORD}
       MODE: creative
       DIFFICULTY: peaceful
       # Offline mode as before (accounts without Mojang login), only whitelisted names may join.

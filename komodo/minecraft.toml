@@ -14,4 +14,5 @@ webhook_enabled = false
 send_alerts = false
 environment = """
 MC_HOST=mc.apps.lan
+MC_RCON_PASSWORD=[[MC_RCON_PASSWORD]]
 """
