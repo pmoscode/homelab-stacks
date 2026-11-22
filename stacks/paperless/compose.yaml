@@ -33,7 +33,9 @@ services:
       - /srv/data/paperless/export:/usr/src/paperless/export
       - /mnt/nas/paperless/consume:/usr/src/paperless/consume
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8000/accounts/login/"]
+      # Host header needed: with PAPERLESS_URL set, Django only accepts that host (ALLOWED_HOSTS),
+      # a request to 127.0.0.1 gets HTTP 400 and the container turns unhealthy (Traefik drops it).
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "-H", "Host: ${PAPERLESS_HOST}", "http://127.0.0.1:8000/accounts/login/"]
       interval: 30s
       timeout: 10s
       start_period: 120s
