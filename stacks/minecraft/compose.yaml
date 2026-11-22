@@ -17,7 +17,7 @@
 # Ports 25565 and 8080 are opened for the LAN in homelab-komodo (host_vars/apps-node-1.yml).
 services:
   socket-proxy:
-    image: wollomatic/socket-proxy:1.13.2
+    image: wollomatic/socket-proxy:1.14.0
     container_name: minecraft-socket-proxy
     restart: unless-stopped
     user: "65534:989"          # 989 = docker group on apps-node-1
