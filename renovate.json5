@@ -1,7 +1,11 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-  extends: ['config:recommended', 'schedule:weekly'],
+  extends: ['config:recommended'],
   timezone: 'Europe/Berlin',
+  // No schedule and no limits: open every update PR right away, all at once.
+  prHourlyLimit: 0,
+  prConcurrentLimit: 0,
+  branchConcurrentLimit: 0,
   // Image tags stay pinned in compose.yaml; every update arrives as a pull request.
   // Merging does not deploy: Resource Sync only redeploys on TOML changes, so deploy the stack in Komodo.
   automerge: false,
