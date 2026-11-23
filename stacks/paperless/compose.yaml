@@ -17,6 +17,8 @@ services:
       TZ: Europe/Berlin
       PAPERLESS_URL: https://${PAPERLESS_HOST}
       PAPERLESS_PORT: "8000"
+      # PAPERLESS_URL alone limits ALLOWED_HOSTS to its host. trmnl polls http://paperless:8000 over the proxy network.
+      PAPERLESS_ALLOWED_HOSTS: ${PAPERLESS_HOST},paperless
       PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
       PAPERLESS_REDIS: redis://redis:6379
       PAPERLESS_DBENGINE: postgresql
