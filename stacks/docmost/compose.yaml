@@ -51,7 +51,7 @@ services:
       - traefik.http.services.docmost.loadbalancer.server.port=3000
 
   redis:
-    image: redis:8.10
+    image: redis:8.12
     container_name: docmost-redis
     restart: unless-stopped
     healthcheck:
