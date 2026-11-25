@@ -112,3 +112,9 @@ gemergt. Die Übersicht steht im Issue „Dependency Dashboard“.
 
 Ein Merge deployt nicht: Die Sync deployt nur bei Änderungen an einer TOML neu, auch für Stacks mit `deploy = true`.
 Nach dem Merge den Stack in Komodo deployen (Stack → Deploy) und kurz prüfen, ob Gatus grün bleibt.
+
+**Minecraft nach einem Deploy:** Ändert sich nur der Service `mc`, erstellt Komodo nur diesen neu und startet ihn
+selbst, an lazymc vorbei. lazymc stoppt ihn dann hart und bleibt danach bei „Server startet …“ hängen, Spieler
+laufen in den 25-s-Timeout. Deshalb nach jedem Deploy den Service `lazymc` neu starten (Komodo: Stack → Services →
+`lazymc` → Restart). Ein Hinweis darauf im Log von `minecraft-lazymc`: „Failed to stop server, no more suitable
+stopping method“, danach „Received command to start group“ ohne „Starting container“.
