@@ -88,6 +88,8 @@ services:
       RESOURCE_PACK: http://${MC_HOST}:8080/resource_pack.zip
       RESOURCE_PACK_SHA1: c97ecedfcb4b40b8f5b26bd9d68bb9766d2f2f3f
       # Modrinth version IDs (identified by file hash on 2026-11-07), dependencies listed explicitly.
+      # From macaws-furniture on: furniture mods (added 2026-11-25). They add real blocks, so every
+      # client needs the same versions installed. Their only dependency is fabric-api.
       MODRINTH_PROJECTS: |
         fabric-api:UWwhUX3k
         polymer:561YnR5f
@@ -95,6 +97,12 @@ services:
         polydecorations:byp83CQs
         easy-elevators:DcCf4yj9
         squaremap:QoKeDHFP
+        macaws-furniture:ptL25rVF
+        macaws-lights-and-lamps:pgtedKkN
+        adorn:OmRBvMca
+        paladins-furniture:8PSAMxze
+        skniros-furniture:n6uG34xf
+        ketkets-furnicraft:pTsJOSvm
       MODRINTH_DOWNLOAD_DEPENDENCIES: none
     volumes:
       - /srv/data/minecraft:/data
