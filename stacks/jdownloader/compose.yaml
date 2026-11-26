@@ -5,7 +5,7 @@
 # MyJDownloader login as Komodo secrets (also stored in /config after the first start).
 services:
   jdownloader:
-    image: jlesage/jdownloader-2:v26.09.1
+    image: jlesage/jdownloader-2:v26.11.2
     container_name: jdownloader
     restart: unless-stopped
     # Without a limit the JVM takes up to 1/4 of the host RAM (~1.7 GB in use).
