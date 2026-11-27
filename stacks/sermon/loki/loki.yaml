@@ -1,0 +1,77 @@
+# Loki for SerMon (ADR 0031), used in production and by `just dev`: single binary, filesystem
+# storage, multi-tenant – every request needs X-Scope-OrgID = organization UUID, which only the
+# server sets. Loki has no login of its own: it sits on the internal network without a published
+# port (deploy/compose) or on 127.0.0.1 (deploy/dev).
+auth_enabled: true
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  replication_factor: 1
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2026-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# Per tenant (organization). The server bounds each node before (M3-07).
+limits_config:
+  retention_period: 336h # 14 days (KONZEPT D12)
+  allow_structured_metadata: true
+  # Only SerMon's labels and fields (ADR 0031): no service_name label, no detected_level field.
+  discover_service_name: []
+  discover_log_levels: false
+  # Entries from the agent's buffer: at most as old as security events (7 days).
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+  creation_grace_period: 10m
+  ingestion_rate_mb: 4
+  ingestion_burst_size_mb: 16
+  # Above the server's buckets (a node 1 MiB/s with 8 MiB burst, an organization 3 MiB/s with
+  # 12 MiB burst): the server throttles first; Loki's 429 only drops the organization's entries
+  # (M3-28).
+  per_stream_rate_limit: 2MB
+  per_stream_rate_limit_burst: 16MB
+  # The agent cuts messages to 16 KiB; metadata comes on top.
+  max_line_size: 32KB
+  max_line_size_truncate: true
+  # node_id, source, unit, severity (ADR 0031).
+  max_label_names_per_series: 8
+  max_label_value_length: 128
+  max_global_streams_per_user: 20000
+  max_query_length: 337h # the retention and a margin
+  max_query_series: 1000
+  max_entries_limit_per_query: 5000
+  query_timeout: 1m
+  # Deleting a tenant's data (M3-10, D29).
+  deletion_mode: filter-and-delete
+
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  delete_request_store: filesystem
+  # SerMon never cancels a deletion (an organization's purge comes after its grace, D29): run it
+  # soon instead of after the default 24 h (M3-10).
+  delete_request_cancel_period: 10m
+
+analytics:
+  reporting_enabled: false # no usage reporting to Grafana (KONZEPT §18.6)

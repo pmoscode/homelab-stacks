@@ -55,6 +55,12 @@ Apps mit Datenbank hängen zusätzlich am externen Netzwerk `db` (vom Stack `pos
 Internetzugang) und verbinden sich mit `postgres:5432`. Datenbank und Rolle legt die Migration an, neue Apps per
 `docker exec -it postgres psql -U postgres`.
 
+**SerMon** hängt nicht an `proxy`, sondern mit Traefik an `sermon_edge` (vom Stack `traefik` angelegt, 172.30.78.0/24,
+Traefik fest auf `172.30.78.10`): Nur diese Adresse darf SerMon `X-Forwarded-For` setzen, und keine andere App erreicht
+den Server direkt. Traefik spricht `h2c` mit ihm (`loadbalancer.server.scheme=h2c`), weil das Enrollment der Agents
+gRPC auf dem Web-Listener ist. Der Agent-Port 8443 geht an Traefik vorbei direkt an den Container (mTLS, der Server
+braucht die echten Adressen der Agents). Ändert sich `stacks/traefik`, zuerst Traefik deployen, dann `sermon`.
+
 Traefik spricht die Docker-API nur über den Socket-Proxy (Netzwerk `socket_proxy`, intern, nur lesend). Andere
 Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Netzwerk.
 
@@ -62,7 +68,7 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 
 | Stack        | Hostnamen                             | Hinweis                                                     |
 |--------------|---------------------------------------|-------------------------------------------------------------|
-| `traefik`    | –                                     | Port 80/443, mit Socket-Proxy, `deploy = true`              |
+| `traefik`    | –                                     | Port 80/443, mit Socket-Proxy, Netz `sermon_edge` (feste Adresse), `deploy = true` |
 | `postgres`   | –                                     | Postgres 17.5 für alle Apps, Netzwerk `db`, `deploy = true` |
 | `netbird`    | –                                     | Routing-Peer (NetBird Cloud) für das LAN, Host-Netzwerk, `deploy = true` |
 | `ddns`       | –                                     | DynDNS: öffentliche IPv4 auf `pmsys.dev` (deSEC), `*.pmsys.dev` als CNAME darauf, Secret `DESEC_TOKEN`, `deploy = true` |
@@ -81,6 +87,7 @@ Dienste, die die Docker-API brauchen (z. B. Alloy), hängen sich an dasselbe Net
 | `opencloud`  | `cloud.apps.lan`                      | intern, PosixFS auf dem NAS (`/mnt/opencloud`), eingebauter IdP |
 | `vaultwarden`    | `vault.pmsys.dev`                  | öffentlich, SQLite, Admin-Token/SMTP in `config.json`      |
 | `minecraft`  | `mc.apps.lan:25565`, Karte `:8080`    | intern, Fabric 26.2, lazymc startet den Server bei Bedarf, Komodo-Alarme aus |
+| `sermon`     | `sermon.apps.lan`, Agents `:8443`     | intern, SerMon-Testbetrieb (Release-Kandidat), eigene TimescaleDB und Loki, Netz `sermon_edge`, Secrets als Dateien (homelab-komodo, Rolle `sermon_server`) |
 
 ## Komodo-Ressourcen außer Stacks
 
@@ -108,6 +115,10 @@ gemergt. Die Übersicht steht im Issue „Dependency Dashboard“.
 - **Major-Updates** erst nach Haken im Dependency Dashboard, vorher Release Notes und Migrationshinweise lesen.
 - **Postgres** bekommt keine Major-Updates (17 → 18 braucht Dump und Restore), Minor-Updates schon.
 - **Toniebox-Manager** ist ausgenommen, das eigene Image hat nur Tags `main-<commit>`.
+- **SerMon** (`ghcr.io/pmoscode/sermon-server`): Tag und Digest, Versionen nach SemVer (vom Kandidaten `-rc.N` zum
+  nächsten Kandidaten oder zum Release). Vor dem Merge die Signatur mit cosign prüfen und vergleichen, ob cosign den
+  Digest des PRs nennt (Befehl im PR); `initdb/` und `loki/` mit `deploy/compose/` des Tags vergleichen. Nach dem
+  Deploy läuft zuerst `migrate`. TimescaleDB bleibt auf PostgreSQL 17 (Suffix `-pg17`).
 - **Minecraft:** Das Image-Update ändert nur den Starter, Spielversion, Fabric und Mods stehen fest im `environment`.
 
 Ein Merge deployt nicht: Die Sync deployt nur bei Änderungen an einer TOML neu, auch für Stacks mit `deploy = true`.

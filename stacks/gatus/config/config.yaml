@@ -102,6 +102,19 @@ endpoints:
     <<: *internal
     url: https://tonie.apps.lan/health
     conditions: *internal-conditions
+  # /readyz: 200 only with the database reachable
+  - name: SerMon
+    <<: *internal
+    url: https://sermon.apps.lan/readyz
+    conditions: *internal-conditions
+  # Agent API (mTLS, SerMon's own agent CA, so no certificate check here), published directly
+  - name: SerMon Agent-API
+    group: internal
+    interval: 1m
+    alerts: [{ type: ntfy }]
+    url: tcp://10.0.1.230:8443
+    conditions:
+      - "[CONNECTED] == true"
 
   # lazymc answers on 25565 also while the Minecraft server sleeps (no wake-up, plain TCP connect)
   - name: Minecraft (lazymc)

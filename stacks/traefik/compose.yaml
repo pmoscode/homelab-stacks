@@ -3,6 +3,7 @@
 #   websecure (:443) LAN-only apps, TLS with the wildcard *.apps.lan from the own CA
 # Certificate and dynamic config (/srv/traefik) are written by Ansible (homelab-komodo, role tls_internal).
 # Docker API only through the socket proxy (read-only, containers/networks/events).
+# sermon_edge: Traefik's fixed address for SerMon (trusted proxy there), see stacks/sermon.
 services:
   socket-proxy:
     image: tecnativa/docker-socket-proxy:v0.5.0
@@ -51,7 +52,12 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-    networks: [proxy, socket_proxy]
+    networks:
+      proxy: {}
+      socket_proxy: {}
+      # Fixed address: the only one SerMon accepts X-Forwarded-For from (stack sermon).
+      sermon_edge:
+        ipv4_address: 172.30.78.10
 
 networks:
   proxy:
@@ -59,3 +65,12 @@ networks:
   socket_proxy:
     name: socket_proxy
     internal: true
+  # Traefik and the SerMon server only (SerMon's "edge" network). Fixed subnet so that Traefik's
+  # address stays the same; dynamic addresses from the upper half only. Outside the minecraft
+  # network (172.30.0.0/24).
+  sermon_edge:
+    name: sermon_edge
+    ipam:
+      config:
+        - subnet: 172.30.78.0/24
+          ip_range: 172.30.78.128/25

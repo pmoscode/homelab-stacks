@@ -1,0 +1,23 @@
+# App stack: no "deploy = true". First deploy by hand after homelab-komodo "task sermon" (directories,
+# secrets, firewall); the first run of "migrate" fails until "task sermon-init" created the master
+# keys, then deploy again. Needs the network sermon_edge of the stack traefik (deploy traefik first).
+# No Komodo secret variables: SerMon reads its secrets as files from /srv/secrets/sermon (vault,
+# role sermon_server). migrate exits after the migrations, backup/restore only run on demand.
+[[stack]]
+name = "sermon"
+description = "SerMon server monitoring, test operation of the release candidate (LAN only)"
+
+[stack.config]
+server = "apps-node-1"
+repo = "pmoscode/homelab-stacks"
+branch = "main"
+run_directory = "stacks/sermon"
+webhook_enabled = false
+ignore_services = ["migrate", "backup", "restore"]
+environment = """
+SERMON_DOMAIN=sermon.apps.lan
+SERMON_SMTP_HOST=smtp.gmail.com
+SERMON_SMTP_PORT=465
+SERMON_SMTP_TLS=tls
+SERMON_SMTP_FROM=SerMon <sermon@pmsys.zone>
+"""

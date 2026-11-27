@@ -34,5 +34,20 @@
       matchPackageNames: ['itzg/minecraft-server'],
       prBodyNotes: ['`VERSION`, `FABRIC_LOADER_VERSION` and `MODRINTH_PROJECTS` stay unchanged. Deploy, then join once to verify.'],
     },
+    {
+      description: 'SerMon: release candidates (1.0.0-rc.N) to the next candidate or the release. Docker versioning would only compare tags with the same suffix (rc.1).',
+      matchDatasources: ['docker'],
+      matchPackageNames: ['ghcr.io/pmoscode/sermon-server'],
+      versioning: 'semver',
+      prBodyNotes: [
+        'Before merging: read the "Upgrade" section of the release notes, then check the signature and that cosign names the digest of this PR: `cosign verify ghcr.io/pmoscode/sermon-server:<version> --certificate-identity "https://github.com/pmoscode/SerMon/.github/workflows/release.yml@refs/tags/v<version>" --certificate-oidc-issuer https://token.actions.githubusercontent.com | grep -o "sha256:[0-9a-f]*" | sort -u`. Compare `initdb/` and `loki/` with `deploy/compose/` of the tag. After the merge deploy the stack (migrate runs first).',
+      ],
+    },
+    {
+      description: 'SerMon: TimescaleDB stays on PostgreSQL 17 (the -pg17 suffix), Loki with the server release.',
+      matchDatasources: ['docker'],
+      matchPackageNames: ['timescale/timescaledb', 'grafana/loki'],
+      prBodyNotes: ['Prefer the versions of SerMon\'s `deploy/compose/compose.yaml`; a different one is untested there.'],
+    },
   ],
 }

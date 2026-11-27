@@ -1,0 +1,232 @@
+# SerMon (server monitoring, own project pmoscode/SerMon) in test operation, release candidate.
+# LAN only: web UI https://${SERMON_DOMAIN} (Traefik websecure, own CA), agents on port 8443 (mTLS,
+# published directly so the server sees the agents' addresses; nftables: LAN only).
+#
+# Derived from SerMon's production compose (deploy/compose/compose.yaml of the release tag) with
+# the same hardening: every container read-only, no capabilities, no new privileges. Differences:
+#   - Traefik instead of Caddy. Traefik reaches the server over the network "sermon_edge" (stack
+#     traefik), where it has the fixed address 172.30.78.10, the only one in SERMON_TRUSTED_PROXIES.
+#     The server is not on "proxy": no other app can reach it or forge X-Forwarded-For.
+#     h2c to the server: the agents' enrollment is gRPC on the web listener and needs HTTP/2.
+#   - Bind mounts under /srv/data/sermon and secrets as files in /srv/secrets/sermon, both prepared
+#     by homelab-komodo (role sermon_server, from the vault). Nothing secret in the Komodo environment.
+#   - Own TimescaleDB (the shared Postgres has no TimescaleDB) and own Loki, both only on the
+#     internal network. Loki is SerMon's log store, not monitoring of the homelab.
+#   - Images pinned by tag and digest (Renovate). Check a new server image with cosign before the
+#     deploy (homelab-stacks README, "Updates").
+#
+# First installation (homelab-komodo README, "SerMon"): task sermon, deploy this stack (migrate
+# fails without master keys, that is expected), task sermon-init, deploy again.
+# Database roles: the superuser "postgres" stays in the database container, the one-shot "migrate"
+# alone knows the owner (sermon_owner), the server connects as sermon_app, "backup" as
+# sermon_backup (read-only). Master keys: /srv/data/sermon/state/master_keys, created by init,
+# never replace them. Without them every sealed value (agent CA, TOTP, credentials) is lost.
+name: sermon
+
+x-hardened: &hardened
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: 10m, max-file: "5" }
+
+# The server's settings, shared with the one-shot migrate service (config is checked as a whole).
+x-server-environment: &server-environment
+  SERMON_DATABASE_URL_FILE: /run/secrets/database_url
+  SERMON_MASTER_KEYS_FILE: /var/lib/sermon/master_keys
+  SERMON_LOG_FORMAT: json
+  SERMON_HTTP_ADDR: ":8080"
+  SERMON_ALLOWED_ORIGINS: https://${SERMON_DOMAIN:?set SERMON_DOMAIN}
+  # Only Traefik (fixed address on sermon_edge) may set X-Forwarded-For.
+  SERMON_TRUSTED_PROXIES: 172.30.78.10/32
+  SERMON_AGENT_ADDR: ":8443"
+  SERMON_AGENT_HOSTNAMES: ${SERMON_DOMAIN}
+  # Signed agent binaries and package repositories of the image's version (install.sh, self-update).
+  SERMON_AGENT_DOWNLOADS_DIR: /srv/downloads
+  SERMON_REPO_DIR: /srv/repo
+  SERMON_DATABASE_SIZE_LIMIT: ${SERMON_DATABASE_SIZE_LIMIT:-}
+  # Notification channels: ntfy.sh is public, nothing internal needed.
+  SERMON_OUTBOUND_ALLOWLIST: ${SERMON_OUTBOUND_ALLOWLIST:-}
+  # Instance metrics without sign-in (no tenant data; load measurement of V1-18 with SerMon's
+  # scripts/load-report.sh). Not published: only reachable on the container's own networks (the
+  # server warns about the non-loopback address in its log).
+  SERMON_METRICS_ADDR: ":9464"
+  SERMON_LOKI_URL: http://loki:3100
+  # Mail is required in production mode (invitations). Credentials come as files.
+  SERMON_SMTP_HOST: ${SERMON_SMTP_HOST:?set SERMON_SMTP_HOST}
+  SERMON_SMTP_PORT: ${SERMON_SMTP_PORT:-465}
+  SERMON_SMTP_TLS: ${SERMON_SMTP_TLS:-tls}
+  SERMON_SMTP_FROM: ${SERMON_SMTP_FROM:?set SERMON_SMTP_FROM}
+  SERMON_SMTP_USERNAME_FILE: /run/secrets/smtp_username
+  SERMON_SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+
+services:
+  postgres:
+    <<: *hardened
+    image: timescale/timescaledb:2.32.0-pg17@sha256:6a6b7d7a346d7c6be03a310c240706f3bbc6d7adbdf3fbc07823570b34337f5e
+    container_name: sermon-postgres
+    # Write load of the metrics (SerMon V1-23): compressed full-page images, fewer checkpoints.
+    command:
+      - postgres
+      - -c
+      - wal_compression=lz4
+      - -c
+      - max_wal_size=8GB
+      - -c
+      - checkpoint_timeout=15min
+    # The entrypoint prepares the data directory as root and then drops to postgres (UID 70).
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: sermon
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      TIMESCALEDB_TELEMETRY: "off"
+      # timescaledb-tune sizes the memory once, at the first start (shared host, not all of its RAM).
+      TS_TUNE_MEMORY: ${SERMON_DB_MEMORY:-2GB}
+      TZ: Europe/Berlin
+    secrets: [postgres_password, postgres_owner_password, postgres_app_password, postgres_backup_password]
+    volumes:
+      - ${SERMON_DATA_DIR:-/srv/data/sermon}/postgres:/var/lib/postgresql/data
+      # The roles sermon_owner, sermon_definer, sermon_app, sermon_backup (copy of SerMon's file).
+      # A file mount on purpose: a directory would hide the image's TimescaleDB init scripts. Only
+      # read when the data directory is initialized.
+      - ./initdb/010-roles.sh:/docker-entrypoint-initdb.d/010-roles.sh:ro
+    tmpfs: [/var/run/postgresql, /tmp]
+    shm_size: 256mb
+    networks: [internal]
+    healthcheck:
+      # Over TCP: during the first initialization a temporary server answers on the socket only.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d sermon"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # Applies the migrations as the schema owner and exits; the server waits for it. The first
+  # installation runs "init" here instead (homelab-komodo: task sermon-init).
+  migrate:
+    <<: *hardened
+    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.1@sha256:0dea4824753d71674667b7d4dcc4cb0fc382662de8b7b6524b9e187063bf9716
+    command: ["migrate"]
+    restart: "no"
+    environment:
+      <<: *server-environment
+      SERMON_DATABASE_MIGRATE_URL_FILE: /run/secrets/database_migrate_url
+    secrets: [database_url, database_migrate_url, smtp_username, smtp_password]
+    volumes:
+      - ${SERMON_DATA_DIR:-/srv/data/sermon}/state:/var/lib/sermon
+    networks: [internal]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  server:
+    <<: *hardened
+    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.1@sha256:0dea4824753d71674667b7d4dcc4cb0fc382662de8b7b6524b9e187063bf9716
+    container_name: sermon
+    environment: *server-environment
+    secrets: [database_url, smtp_username, smtp_password]
+    volumes:
+      # Master keys (UID 65532), created by init. Backed up by restic with /srv/data.
+      - ${SERMON_DATA_DIR:-/srv/data/sermon}/state:/var/lib/sermon
+    ports:
+      - "8443:8443"   # agents (mTLS), nftables: LAN only
+    networks: [sermon_edge, internal]
+    depends_on:
+      postgres: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+      loki: { condition: service_started }
+    # Distroless, no health check of its own (Gatus checks /readyz through Traefik).
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=sermon_edge
+      - traefik.http.routers.sermon.rule=Host(`${SERMON_DOMAIN}`)
+      - traefik.http.routers.sermon.entrypoints=websecure
+      - traefik.http.services.sermon.loadbalancer.server.port=8080
+      # HTTP/2 without TLS: browsers (Connect) and the agents' gRPC enrollment alike.
+      - traefik.http.services.sermon.loadbalancer.server.scheme=h2c
+
+  # Encrypted logical backup (master data, events, agent CA, settings; no raw metrics) to stdout,
+  # to the public keys in backup_recipients. Run nightly by homelab-komodo (role backup):
+  #   docker compose run --rm --no-deps -T backup > /srv/backup/sermon/sermon-<time>.backup
+  backup:
+    <<: *hardened
+    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.1@sha256:0dea4824753d71674667b7d4dcc4cb0fc382662de8b7b6524b9e187063bf9716
+    command: ["backup", "--out", "-"]
+    restart: "no"
+    profiles: [backup]
+    environment:
+      SERMON_DATABASE_BACKUP_URL_FILE: /run/secrets/database_backup_url
+      SERMON_MASTER_KEYS_FILE: /var/lib/sermon/master_keys
+      SERMON_BACKUP_RECIPIENTS_FILE: /run/secrets/backup_recipients
+      SERMON_LOG_FORMAT: json
+    secrets: [database_backup_url, backup_recipients]
+    volumes:
+      - ${SERMON_DATA_DIR:-/srv/data/sermon}/state:/var/lib/sermon:ro
+    networks: [internal]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # Restore into a new, empty database while the server is stopped (SerMon docs/admin/backup.md):
+  #   docker compose run --rm -T restore < sermon-….backup
+  # Only for the restore: /srv/secrets/sermon/master_keys (the saved master keys) and
+  # /srv/secrets/sermon/backup_identity (the secret backup key from the password manager), both
+  # deleted again afterwards.
+  restore:
+    <<: *hardened
+    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.1@sha256:0dea4824753d71674667b7d4dcc4cb0fc382662de8b7b6524b9e187063bf9716
+    command: ["restore", "--in", "-", "--install-master-keys", "/var/lib/sermon/master_keys"]
+    restart: "no"
+    profiles: [restore]
+    environment:
+      SERMON_DATABASE_MIGRATE_URL_FILE: /run/secrets/database_migrate_url
+      SERMON_MASTER_KEYS_FILE: /run/secrets/master_keys
+      SERMON_BACKUP_IDENTITY_FILE: /run/secrets/backup_identity
+      SERMON_LOG_FORMAT: json
+    secrets: [database_migrate_url, master_keys, backup_identity]
+    volumes:
+      - ${SERMON_DATA_DIR:-/srv/data/sermon}/state:/var/lib/sermon
+    networks: [internal]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # Logs of the nodes (14 days). Multi-tenant without a login of its own: internal network only,
+  # no published port; runs as UID 10001 from the image.
+  loki:
+    <<: *hardened
+    image: grafana/loki:3.7.10@sha256:b43c257ccfc925d4a50b8717cac61a3b51df8c48d01847936057e5c4075a24a7
+    container_name: sermon-loki
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    mem_limit: ${SERMON_LOKI_MEMORY:-1g}
+    environment:
+      GOMEMLIMIT: ${SERMON_LOKI_GOMEMLIMIT:-900MiB}
+    volumes:
+      # Directory, not the file: git replaces the file on pull, a file mount would keep the old one.
+      - ./loki:/etc/loki:ro
+      - ${SERMON_DATA_DIR:-/srv/data/sermon}/loki:/loki
+    tmpfs: [/tmp]
+    networks: [internal]
+
+networks:
+  # Traefik (fixed address 172.30.78.10) and the server; created by the stack traefik.
+  sermon_edge:
+    external: true
+  # The database and Loki: no route outside.
+  internal:
+    internal: true
+
+# Files written by homelab-komodo (role sermon_server) from the vault, readable only by the UID of
+# the container that needs them.
+secrets:
+  postgres_password: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/postgres_password" }
+  postgres_owner_password: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/postgres_owner_password" }
+  postgres_app_password: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/postgres_app_password" }
+  postgres_backup_password: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/postgres_backup_password" }
+  database_url: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/database_url" }
+  database_migrate_url: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/database_migrate_url" }
+  database_backup_url: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/database_backup_url" }
+  backup_recipients: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/backup_recipients" }
+  smtp_username: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/smtp_username" }
+  smtp_password: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/smtp_password" }
+  master_keys: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/master_keys" }
+  backup_identity: { file: "${SERMON_SECRETS_DIR:-/srv/secrets/sermon}/backup_identity" }
