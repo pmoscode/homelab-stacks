@@ -50,8 +50,8 @@ x-server-environment: &server-environment
   # Notification channels: ntfy.sh is public, nothing internal needed.
   SERMON_OUTBOUND_ALLOWLIST: ${SERMON_OUTBOUND_ALLOWLIST:-}
   # Instance metrics without sign-in (no tenant data; load measurement of V1-18 with SerMon's
-  # scripts/load-report.sh). Not published: only reachable on the container's own networks (the
-  # server warns about the non-loopback address in its log).
+  # scripts/load-report.sh on the host). Published on the host's loopback only (the server warns
+  # about the non-loopback address inside the container in its log).
   SERMON_METRICS_ADDR: ":9464"
   SERMON_LOKI_URL: http://loki:3100
   # Mail is required in production mode (invitations). Credentials come as files.
@@ -107,7 +107,7 @@ services:
   # installation runs "init" here instead (homelab-komodo: task sermon-init).
   migrate:
     <<: *hardened
-    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.1@sha256:0dea4824753d71674667b7d4dcc4cb0fc382662de8b7b6524b9e187063bf9716
+    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.2@sha256:3a76bf52b6126ba48a16abeb187357f0857e15698773209aca36fbbe50dda97e
     command: ["migrate"]
     restart: "no"
     environment:
@@ -122,7 +122,7 @@ services:
 
   server:
     <<: *hardened
-    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.1@sha256:0dea4824753d71674667b7d4dcc4cb0fc382662de8b7b6524b9e187063bf9716
+    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.2@sha256:3a76bf52b6126ba48a16abeb187357f0857e15698773209aca36fbbe50dda97e
     container_name: sermon
     environment: *server-environment
     secrets: [database_url, smtp_username, smtp_password]
@@ -131,6 +131,7 @@ services:
       - ${SERMON_DATA_DIR:-/srv/data/sermon}/state:/var/lib/sermon
     ports:
       - "8443:8443"   # agents (mTLS), nftables: LAN only
+      - "127.0.0.1:9464:9464"   # /metrics for the load measurement, loopback only
     networks: [sermon_edge, internal]
     depends_on:
       postgres: { condition: service_healthy }
@@ -151,7 +152,7 @@ services:
   #   docker compose run --rm --no-deps -T backup > /srv/backup/sermon/sermon-<time>.backup
   backup:
     <<: *hardened
-    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.1@sha256:0dea4824753d71674667b7d4dcc4cb0fc382662de8b7b6524b9e187063bf9716
+    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.2@sha256:3a76bf52b6126ba48a16abeb187357f0857e15698773209aca36fbbe50dda97e
     command: ["backup", "--out", "-"]
     restart: "no"
     profiles: [backup]
@@ -174,7 +175,7 @@ services:
   # deleted again afterwards.
   restore:
     <<: *hardened
-    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.1@sha256:0dea4824753d71674667b7d4dcc4cb0fc382662de8b7b6524b9e187063bf9716
+    image: ghcr.io/pmoscode/sermon-server:1.0.0-rc.2@sha256:3a76bf52b6126ba48a16abeb187357f0857e15698773209aca36fbbe50dda97e
     command: ["restore", "--in", "-", "--install-master-keys", "/var/lib/sermon/master_keys"]
     restart: "no"
     profiles: [restore]

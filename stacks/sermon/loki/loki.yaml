@@ -56,7 +56,9 @@ limits_config:
   max_label_names_per_series: 8
   max_label_value_length: 128
   max_global_streams_per_user: 20000
-  max_query_length: 337h # the retention and a margin
+  # The retention, the two steps of 4 h a log histogram over 14 days reaches beyond its range
+  # (SerMon V1-24), and a margin.
+  max_query_length: 360h
   max_query_series: 1000
   max_entries_limit_per_query: 5000
   query_timeout: 1m
